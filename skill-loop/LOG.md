@@ -92,3 +92,15 @@ G optionals, H events, I upgradeability, J ownership/time, K naming/widths, L cr
 the EVM overlay becomes an instantiation of those rules. Notable rulings: caller-identity
 chains drop the `sender` argument; the retention window is behaviour on every chain; no
 upgrade emulation on chains without native code replacement.
+
+## EVM round 2 — skill v4 — builds, 193 tests, 23 decisions (all minor)
+
+`out_dir=/home/user/df-gen/evm-2`. Isolation clean. Verified independently: `forge test`
+193/193; no `upgrade` on the ABI (I.3); `sender` argument dropped (A.2); camelCase (K.1).
+Decision log (`evm-round2-DECISIONS.md`) no longer contains architectural choices; what is
+left: unnamed struct/library names, ownership-table trigger order and cancel/expiry details,
+`MinDecimals` presence (0 is a valid minimum), token-transfer failure handling, forge
+`[lint]` key location, and which spec/05 conditions are vacuous on the EVM (upgrade,
+lifetime refresh, TTL-varying window, sender-without-auth).
+→ v5: full ownership semantics table in spec/06 J (taken from the Stellar library's exact
+behaviour), presence exception for `MinDecimals`, token failure rule, overlay fixes.
