@@ -186,3 +186,23 @@ Real spec gaps it named (→ v10): the spec/05 "sender without host authorisatio
 is A.1-only; G.1 applies to return values; presence rule for the pending offer; B.4 layout
 always documented; E.2 constants non-public; K.2 token return-data rule; invalid enum
 discriminant = host failure.
+
+## Aptos round 2 — skill v9 (overlay existed) — builds, 187 tests, 0 ABI / 3 behaviour — CONVERGED
+
+`out_dir=/home/user/df-gen/aptos-2`. Verified: cache 128 + proxy 59; `DATA_RETENTION_TTL =
+15_552_000`. Isolation clean. Three behaviour entries (host instance check first; bound
+discriminant validated before state lookup; `recover_tokens` event ordering) written back into
+`chains/aptos.md` (committed here). Gaps → v10: host-check ordering generalised to all
+platforms (D.2), M.2 accessors only for public-surface records, events after effects (H.2).
+
+## Skill v10 — final state
+| Chain | Path | Rounds | Final |
+|---|---|---|---|
+| Stellar | human overlay | 3 | 179/179 reference conformance |
+| EVM | human overlay | 5 | 189 tests, retention 180 d, 0 real decisions |
+| Solana | human overlay | 3 | 146 tests, 0 ABI decisions |
+| Aptos | **self-authored overlay** | 2 | 187 tests, 0 ABI / 3 behaviour (written back) |
+"Implement for a new chain" is now a single invocation: Phase 0 authors the overlay, Phase 1
+implements + tests, step 7 hardens the overlay. Expect 1–2 runs per new chain to reach 0 ABI
+decisions. Solana has not been re-run on the 180-day retention fix (v9); its overlay carries
+the new number.

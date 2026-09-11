@@ -21,6 +21,10 @@ Instantiation of `spec/06` for Aptos. Mechanics only; behaviour is in `spec/`.
   (owner / pending-owner checks abort in `data_feeds::ownable`). A token failure in
   `recover_tokens` is the framework's own abort (`aptos_framework::fungible_asset` /
   `object` codes).
+  Every entry point and every view first asserts that the `Cache` / `Proxy` resource exists
+  at the instance address (`host_error::no_instance()`, aborting in the called module) before
+  any signer/owner check, byte-width check or spec check; a call on a missing instance never
+  surfaces a spec error code.
 - **B. Storage** — a contract **instance** is an Aptos object (`aptos_framework::object`)
   holding one resource: `data_feeds::cache::Cache` for the Cache, `data_feeds_proxy::proxy::Proxy`
   for the Proxy. Instance singletons (owner, pending offer, `ExtendRef`, the Proxy's `cache`
@@ -101,7 +105,14 @@ Instantiation of `spec/06` for Aptos. Mechanics only; behaviour is in `spec/`.
   `answer: I256` = `u256` holding the two's-complement bit pattern (BCS: 32 bytes LE).
   `Bound` is a `u8` discriminant on the interface (`AtOrBefore = 0`, `AtOrAfter = 1`; any
   other value → `host_error::invalid_argument()`), because entry/view functions cannot take
-  enums.
+  enums. `find_round` validates the discriminant right after the instance check and before
+  the feed-state lookup, so an unknown bound aborts even for a feed without state (instead of
+  answering `None`). `recover_tokens`: `TokenRecovered` is emitted after
+  `primary_fungible_store::transfer` returns; the destination's primary store is created by
+  the framework when absent; an amount above the instance's balance aborts with
+  `fungible_asset::EINSUFFICIENT_BALANCE` (`0x10004`, location
+  `aptos_framework::fungible_asset`); a `token` address holding no `Metadata` object aborts in
+  `aptos_framework::object`; the contract adds no check of its own.
 - **L. Cross-contract** — the Proxy calls `data_feeds::cache` functions directly
   (`cache::is_frozen(cache, vector[data_id])`, `cache::latest_round`, `cache::get_round`,
   `cache::decimals`, `cache::description`), passing the stored instance address. Aborts
@@ -215,7 +226,10 @@ unknown feed). The report decoder does not check id widths.
 Same format as `SKILL.md` step 6. With this overlay and `spec/06` applied there should be
 no `[ABI]` or `[BEHAVIOUR]` entries; any that remain are written back into this overlay by
 the run that produced them (SKILL.md step 7). The first run (`out_dir = df-gen/aptos-1`)
-wrote back its 12 `[ABI]` and 8 `[BEHAVIOUR]` entries into the sections above.
+wrote back its 12 `[ABI]` and 8 `[BEHAVIOUR]` entries into the sections above. The second run
+(`out_dir = df-gen/aptos-2`) produced 0 `[ABI]` and 3 `[BEHAVIOUR]` entries (instance check
+first; `find_round` bound validation before the state lookup; `recover_tokens` event ordering
+and framework failure codes), written back into axes A and K above.
 
 ## Retention constant
 

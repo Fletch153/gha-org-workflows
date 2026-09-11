@@ -76,7 +76,9 @@ where the condition says "only".
   (108); empty batch is a no-op; non-admin → 101.
 
 ## Cache — on_report
-- sender without host authorisation **(host)** fails.
+- sender without host authorisation **(host)** fails — A.1 platforms only; on caller-identity
+  platforms (A.2) the equivalent guarantee is that a non-permitted caller is soft-skipped with
+  its own identity in `InvalidUpdatePermission` and cannot claim another sender's.
 - metadata of 63 or 65 bytes → 100.
 - undecodable report bytes, and a valid report followed by trailing bytes, fail with the
   platform decoder's failure (see overlay for what that is).
