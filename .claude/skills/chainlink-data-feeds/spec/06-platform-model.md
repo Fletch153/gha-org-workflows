@@ -96,6 +96,12 @@ Rule:
 4. Deep history reads (`round_range` over long ranges, `find_round` on long histories) are
    allowed to be bounded by compute limits; they must never return partial results as if
    complete — they fail with the platform's limit failure.
+5. Where the caller must declare every record a read touches (D.2), the history reads
+   `round_range` and `find_round` take the round records for one contiguous id range the
+   caller chose, and their result is defined **relative to that range**: `round_range`
+   iterates the intersection of `[from, to]` with the supplied range; `find_round` searches
+   the supplied range (the overlay adds explicit `lo`/`hi` arguments naming it). The tip is
+   always taken from `FeedState`, never from the supplied range.
 
 Overlay states: the concrete limits and the declaration convention.
 
