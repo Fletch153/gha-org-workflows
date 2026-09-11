@@ -119,3 +119,12 @@ complete instruction/account table.
 ## Skill v5 — stop criterion for the multi-chain loop
 A chain is "done" when: artifact builds; own tests pass; the decision log contains no entry
 that changes ABI or behaviour (only internal names / test technique are acceptable).
+
+## EVM round 3 — skill v5 — builds, 222 tests, 12 decisions (0 architectural) — EVM CONVERGED
+
+`out_dir=/home/user/df-gen/evm-3`. Isolation clean. Verified `forge test` 222/222. Log
+(`evm-round3-DECISIONS.md`): 1 `[ABI]` = the name of the host-style token-failure error;
+4 `[BEHAVIOUR]` entries restate spec-implied behaviour (u32 `now`, accept check order,
+constants not exposed as getters, hand-written strict decoder); the rest are internal names
+and test technique. → v6: overlay names `TokenTransferFailed(address token)`; spec/06 K states
+constants are not public functions.
