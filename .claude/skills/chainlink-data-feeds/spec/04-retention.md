@@ -9,8 +9,8 @@ lifetime rule as a no-op and the window as unbounded.
 
 | Record | Tier | Lifetime rule |
 |---|---|---|
-| contract instance (code + instance entries) | instance | every state-changing entry point (constructors, `on_report`, all admin mutators, Proxy admin and Proxy readers) refreshes it to the network maximum |
-| `FeedAdmin`, `FeedConfig`, `Permission`, `FeedState`, `MinDecimals` | persistent | on **first write** pin to the network maximum; an overwrite of an existing entry does **not** re-pin; an explicit **refresh** (where the spec says "refresh its lifetime") sets it back to the network maximum and is a no-op for an absent entry |
+| contract instance (code + instance entries) | instance | refreshed to the network maximum by exactly these entry points: both constructors; Cache `on_report`, `set_feed_configs`, `remove_feed_configs`, `set_feed_frozen`, `add_feed_admin`, `remove_feed_admin`; Proxy `set_cache`, `set_min_decimals`, and every Proxy reader. Cache readers and the shared lifecycle functions (`upgrade`, `recover_tokens`, ownership) do **not** refresh it |
+| `FeedAdmin`, `FeedConfig`, `Permission`, `FeedState`, `MinDecimals` | persistent | on **first write** pin to the network maximum; an overwrite of an existing entry does **not** re-pin by itself (every public overwrite path is followed by an explicit refresh, so this is an internal property of the storage helper, not an externally observable one); an explicit **refresh** (where the spec says "refresh its lifetime") sets it back to the network maximum and is a no-op for an absent entry |
 | `Round(data_id, round_id)` | temporary | on first write pin to `round_ttl = min(DATA_RETENTION_TTL, network maximum)`; **never refreshed afterwards**; expires naturally |
 
 `DATA_RETENTION_TTL = 3_110_400` ledgers (180 days of 5-second ledgers). Round history older

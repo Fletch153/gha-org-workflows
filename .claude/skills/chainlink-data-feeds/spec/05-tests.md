@@ -117,13 +117,15 @@ where the condition says "only".
 - `is_frozen`: batch preserves order, duplicates and missing; empty → empty.
 
 ## Cache — retention window (through the public interface)
-- a new round's lifetime is `min(3_110_400, network maximum)`; overwriting never re-pins;
-  refresh restores to full.
+- a new round's lifetime is `min(3_110_400, network maximum)` and is never refreshed by later
+  reports. (The storage helper's "overwrite never re-pins / refresh restores to full" rules are
+  internal; test them directly against the helper if you wish, not through the contract.)
 - window switches width exactly at `grow_at_ledger`; shrinks immediately when TTL drops; grows
   at the expected ledger when TTL rises; a second change replaces the pending plan; same-ledger
   writes share the window; raised TTL reaches only new rounds; lowered TTL reaches new rounds
-  immediately; a network maximum below the fresh minimum stays safe; a write after the grow date
-  locks in the grown width.
+  immediately; a network maximum below the network's *minimum* entry lifetime for a new entry
+  still writes and reads safely (nothing panics, the round is readable); a write after the grow
+  date locks in the grown width.
 
 ## Proxy — constructor / lifecycle
 - stores the owner and routes reads to the given cache; refreshes the instance lifetime.

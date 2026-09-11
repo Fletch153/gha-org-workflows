@@ -17,9 +17,17 @@ A Cargo workspace (resolver 2) at `out_dir` with three members:
 
 | Crate | Kind | Contents |
 |---|---|---|
-| `data-feeds-common` | `rlib` | the shared lifecycle traits `Versioned` (`version`, `type_and_version`), `Upgradeable` (`upgrade`), `TokenRecoverable` (`recover_tokens`) as `#[contracttrait]`s with default bodies, their events `Upgraded` and `TokenRecovered`; a `test_utils` module (behind a `testutils` feature and `cfg(test)`) with a tiny mock contract that implements the traits, plus helpers reused by the other crates' tests |
+| `data-feeds-common` | `rlib` | the shared lifecycle traits `Versioned` (`version`, `type_and_version` — both implemented by each contract, no default bodies), `Upgradeable` (`upgrade`) and `TokenRecoverable` (`recover_tokens`) (these two as `#[contracttrait]`s with default bodies), their events `Upgraded` and `TokenRecovered`; a `test_utils` module (behind a `testutils` feature and `cfg(test)`) with a tiny mock contract that implements the traits, plus helpers reused by the other crates' tests |
 | `data-feeds-cache` | `cdylib` + `rlib` | `DataFeedsCache`. Public interface split into three contract traits with generated clients: `DataFeedsCacheReader`, `DataFeedsCacheWriter`, `DataFeedsCacheAdmin`; public types `RoundData`, `Bound`, `WorkflowPermission`, `FeedConfig`, `FeedConfigEntry`, `ReportEntry`, `Metadata`, `CacheError`, the `DataId` alias (`BytesN<32>`) and the `DECIMALS` constant. Gate the contract implementation, storage, events and domain logic behind a default-on `contract` feature so the crate can be depended on for its interface alone; expose a `testutils` feature (implies `contract` + `soroban-sdk/testutils`) exporting test helpers |
-| `data-feeds-proxy` | `cdylib` + `rlib` | `DataFeedsProxy`. Contract traits `DataFeedsProxyReader` and `DataFeedsProxyAdmin`; types `Round`, `ProxyReadError`. Depends on `data-feeds-cache` with `default-features = false` (interface + reader client only) so the Cache's exported functions are **not** linked into the Proxy artifact; dev-depends on it with `contract` + `testutils` for integration tests |
+| `data-feeds-proxy` | `cdylib` + `rlib` | `DataFeedsProxy`. Contract traits `DataFeedsProxyReader` and `DataFeedsProxyAdmin`; types `Round`, `ProxyReadError`. Depends on `data-feeds-cache` with `default-features = false` (interface + reader client only) so the Cache's exported functions are **not** linked into the Proxy artifact — declare `default-features = false` on the **workspace** `[workspace.dependencies]` line (Cargo ignores it on a member's `workspace = true` line); dev-depends on it with `contract` + `testutils` for integration tests |
+
+A fourth crate is allowed **outside** the workspace members (e.g. `test-fixtures/peek-contract`,
+listed under `[workspace] exclude`) for the distinct upgrade-target fixture; a `cdylib` fixture
+cannot live inside the `rlib` common crate.
+
+Dependency pin: `soroban-env-host 26.1.x` allows `ed25519-dalek 3.x`, which does not compile
+with its testutils. After the first resolve run `cargo update -p ed25519-dalek --precise 2.2.0`
+(check in `Cargo.lock`).
 
 Workspace lints: `unsafe_code = "deny"`. Release profile: `opt-level = "z"`,
 `overflow-checks = true`, `debug = 0`, `strip = "symbols"`, `debug-assertions = false`,
@@ -114,7 +122,12 @@ Upgrade: `env.deployer().update_current_contract_wasm(new_wasm_hash)`. Token rec
 - Deploy with `env.register(Contract, (ctor_args,))`; deploy a wasm fixture with
   `env.register(WASM_BYTES, (args,))`; upload for upgrade with `env.deployer().upload_contract_wasm(bytes)`.
 - Move ledgers with `env.ledger().with_mut(|li| li.sequence_number = n)`; change the network
-  maximum with `env.ledger().set_max_entry_ttl(n)` (testutils `Ledger` trait); read an entry's
+  maximum with `env.ledger().set_max_entry_ttl(n)` (testutils `Ledger` trait). Retention-window
+  tests must keep the ledger inside the instance/persistent lifetimes (the test host
+  auto-restores expired persistent/instance entries and treats expired temporary entries as
+  absent) — lower `max_entry_ttl` to a few hundred ledgers rather than rolling thousands ahead,
+  and lower `min_persistent_entry_ttl` (default 4096) below it, otherwise first-write pinning
+  cannot be observed; read an entry's
   TTL inside `env.as_contract(&id, || env.storage().persistent().get_ttl(&key))` (testutils
   `storage::Persistent` / `Temporary` / `Instance` traits); expire a round by removing its
   temporary entry inside `as_contract`.

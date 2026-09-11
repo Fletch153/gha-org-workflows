@@ -64,7 +64,7 @@ carrying the Cache's error code (the Proxy does not translate it).
 `set_cache(cache: Address)` — refresh instance lifetime; emit `CacheSet { old_cache, new_cache: cache }`;
 store the new address. Round ids resolve against the new Cache from then on.
 
-`set_min_decimals(data_id, min: u32) -> Result<(), ProxyReadError>` — `min > DECIMALS` →
-`InvalidDecimals` (checked before the lifetime refresh); refresh instance lifetime; write
+`set_min_decimals(data_id, min: u32) -> Result<(), ProxyReadError>` — in order: owner auth;
+`min > DECIMALS` → `InvalidDecimals`; refresh instance lifetime; write
 `MinDecimals(data_id)` and pin/refresh its lifetime to the maximum; emit
 `MinDecimalsSet { data_id, min }`. Setting `min = DECIMALS` re-locks reads to full precision.

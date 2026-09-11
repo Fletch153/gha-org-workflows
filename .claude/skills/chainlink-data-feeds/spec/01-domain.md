@@ -86,8 +86,12 @@ Every contract exposes, in addition to its own functions:
 | `transfer_ownership(new_owner: Address, live_until_ledger: u32)` | owner (host) | records a pending offer that expires at `live_until_ledger`; emits `ownership_transfer { old_owner, new_owner, live_until_ledger }` |
 | `accept_ownership()` | pending new owner (host) | completes the transfer; emits `ownership_transfer_completed { new_owner }` |
 | `renounce_ownership()` | owner (host) | clears the owner; fails if a transfer is pending; emits `ownership_renounced { old_owner }` |
-| `upgrade(new_wasm_hash: 32 bytes)` | owner (host) | replaces the contract code in place, keeping address and all storage; emits `Upgraded { new_wasm_hash }` |
-| `recover_tokens(token: Address, to: Address, amount: i128)` | owner (host) | transfers `amount` of `token` held by the contract to `to`; emits `TokenRecovered { token, to, amount }` |
+| `upgrade(new_wasm_hash: 32 bytes)` | owner (host) | replaces the contract code in place, keeping address and all storage; emits `Upgraded { new_wasm_hash }` (no topic fields) |
+| `recover_tokens(token: Address, to: Address, amount: i128)` | owner (host) | transfers `amount` of `token` held by the contract to `to`; emits `TokenRecovered { token, to, amount }` (no topic fields) |
+
+Event names are exact, including case: the ownership events are snake_case (they come from the
+ownership library), `Upgraded` and `TokenRecovered` are PascalCase. None of the lifecycle
+functions (`upgrade`, `recover_tokens`, ownership functions) refreshes any storage lifetime.
 
 Ownership error codes live in the range 2100–2199 (`OwnerNotSet = 2100`,
 `TransferInProgress = 2101`, `OwnerAlreadySet = 2102`) and must not collide with either
