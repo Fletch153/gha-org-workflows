@@ -141,7 +141,10 @@ Fixed accounts, in order (s = signer, w = writable); surplus accounts are ignore
   Cache's own per-id convention: first the `is_frozen` group (`feed_state`), then the
   delegated reader's group (`feed_state` again for `latest_round`; `feed_state, round` for
   `get_round`; `feed_config` for `decimals`/`description`). The Proxy validates `cache_program`
-  against the stored cache and derives/validates every Cache record before the CPI. `get_min_decimals`: `[config,
+  against the stored cache (`ProgramError::IncorrectProgramId`) and derives/validates every
+  Cache record before the CPI; missing, foreign or undecodable CPI return data →
+  `ProgramError::InvalidAccountData`. Cache `get_round` always requires and validates the
+  `round` account for `(data_id, round_id)`, reading it only for a non-tip id. `get_min_decimals`: `[config,
   min_decimals]`; `get_cache`, `version`, `type_and_version`, `get_owner`: `[config]`.
   `set_cache`: `[owner (s), payer (s,w), config (w), system_program]`; `set_min_decimals`:
   `[owner (s), payer (s,w), config (w), min_decimals (w), system_program]`; ownership and
@@ -160,7 +163,8 @@ Document the full table (tags, accounts, seeds, layouts, events, errors) in the 
   errors), `programs/data-feeds-cache`, `programs/data-feeds-proxy` (`crate-type =
   ["cdylib", "lib"]`, entrypoint gated behind a `no-entrypoint` feature so the Proxy can
   depend on the Cache crate for its types).
-- Artifacts: `cargo build-sbf --manifest-path programs/<p>/Cargo.toml` → `target/deploy/<p>.so`.
+- Artifacts: `cargo build-sbf --manifest-path programs/<p>/Cargo.toml` →
+  `target/deploy/<crate_name_with_underscores>.so`.
   Tests: `cargo test --workspace` using `ProgramTest` with `processor!` for both programs
   (the Proxy tests load both).
 

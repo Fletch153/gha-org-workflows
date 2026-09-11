@@ -96,7 +96,11 @@ Rule:
    up front, with a dedicated "record not supplied" error type outside all numeric ranges).
 2. Where the caller must declare touched records in advance (Solana accounts), the overlay
    defines the declaration convention (ordering, derivation) and the entry point validates
-   every supplied record against its expected derivation before use.
+   every supplied record against its expected derivation before use. Native account checks
+   (signatures, derivation, ownership) come first — right after authorisation and loading the
+   contract's own config — and precede the spec's contract-level validations; batch entry
+   points validate each item's records at the point the item is consumed. A reclaim
+   instruction (C.4) emits no event.
 3. Code size limits (e.g. 24 KiB EVM) are met by internal module/library splitting, never by
    dropping behaviour or splitting one logical contract into two deployables with different
    entry points. Two deployables total: Cache and Proxy.

@@ -24,7 +24,7 @@ where the condition says "only".
   round field-for-field, the tip, decimals, description, permissions, admin membership,
   and `version()`.
 - error codes: every `CacheError` has the listed numeric value, lies in 100–199, and is
-  disjoint from the ownership library's codes (which lie in 2100–2199).
+  disjoint from the ownership library's codes (which lie in 2100–2299).
 
 ## Cache — set_feed_configs
 - non-admin caller → 101; empty batch → 103; all-zero id → 107; entry without permissions →

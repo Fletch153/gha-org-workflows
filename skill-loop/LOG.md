@@ -147,3 +147,18 @@ overlay carries all of the above.
 entry restates a spec ruling (view readers, `CacheError(109)`, u32 `now`, no validation where
 the spec is silent) or a Solidity mechanic (calldata→storage copy). Caught one spec
 inconsistency: spec/05 says ownership codes lie in 2100–2199; spec/01/06 say 2100–2299 → v7.
+
+## Solana round 3 — skill v6 — builds, 146 tests, 16 decisions (0 ABI) — CONVERGED
+
+`out_dir=/home/user/df-gen/solana-3`. Verified `cargo test --workspace` 146/146, both `.so`.
+Log (`solana-round3-DECISIONS.md`): no ABI entries; behaviour entries are the choice of
+native `ProgramError` variant for wrong cache program / bad CPI return data, the ordering of
+account-derivation checks vs contract validation, and "reclaim emits no event" → v7 states
+all three.
+
+## Skill v7 — final state of this loop
+Stellar: reference conformance 179/179 (rounds 1–3). EVM: converged at round 3, confirmed at
+round 4. Solana: converged at round 3. Stop criterion met on all three chains.
+
+Rounds run: Stellar 3, EVM 4, Solana 3. Every round: fresh agent, skill-only context,
+isolation audited (no reference reads, no web).
