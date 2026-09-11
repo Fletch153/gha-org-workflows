@@ -176,3 +176,13 @@ and the C.5 selection rule.
 (180 d @ 5 s) baked into the chain-agnostic spec; on EVM/Solana/Aptos it silently meant
 432 d / 14 d / 36 d. v9 specifies retention as 180 days and derives the number per unit in
 each overlay (EVM 1_296_000, Solana 38_880_000, Aptos 15_552_000; Stellar unchanged).
+
+## EVM round 5 — skill v9 — builds, 189 tests, `DATA_RETENTION_TTL = 1_296_000` ✅
+
+`out_dir=/home/user/df-gen/evm-5`. Isolation clean. Verified `forge test` 189/189 and the
+retention constant. The agent logged 10 ABI / 11 behaviour entries — all restatements of
+spec/overlay rulings — and wrote them back into `chains/evm.md` (+60 lines, committed here).
+Real spec gaps it named (→ v10): the spec/05 "sender without host authorisation" condition
+is A.1-only; G.1 applies to return values; presence rule for the pending offer; B.4 layout
+always documented; E.2 constants non-public; K.2 token return-data rule; invalid enum
+discriminant = host failure.
