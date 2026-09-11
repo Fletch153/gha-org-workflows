@@ -27,6 +27,16 @@ Instantiation of `spec/06` for Solana. Mechanics only; behaviour is in `spec/`.
   | `MinDecimals(data_id)` | `["min_decimals", data_id]` |
 
   Round accounts additionally store the `payer` pubkey (outside the `RoundData` ABI) for reclaim.
+  Program ids: `declare_id!` with fresh keypairs checked in under `keys/`; processors use the
+  runtime `program_id` so the code runs under any id. Config layouts (Borsh, after the
+  discriminator): Cache `{ owner: Option<Pubkey>, pending: Option<{ new_owner: Pubkey,
+  live_until_ledger: u32 }> }` (71 bytes allocated); Proxy adds `cache: Pubkey` (103 bytes).
+  Round account payload: discriminator, `RoundData`, then `payer: Pubkey`. An account at a
+  derived address carrying a foreign discriminator → `ProgramError::InvalidAccountData`. A
+  derived address that already holds lamports is created via transfer-to-rent + allocate +
+  assign. Undecodable instruction data (including any tag that does not exist, such as
+  `upgrade`) → `ProgramError::InvalidInstructionData`. The `payer` signature is checked before
+  any other work; listed-but-unused `payer`/`system_program` accounts are still required.
   Record-type discriminators: Cache — config 1, `FeedAdmin` 2, `FeedConfig` 3, `Permission` 4,
   `FeedState` 5, `Round` 6; Proxy — config 1, `MinDecimals` 2. Unit records hold only the
   discriminator. Config accounts are allocated at the maximum Borsh size of their layout and
@@ -41,9 +51,9 @@ Instantiation of `spec/06` for Solana. Mechanics only; behaviour is in `spec/`.
   Reclaim **is defined**: a permissionless instruction `reclaim_round(data_id, round_id)`
   closes the round account and refunds its lamports to the recorded payer, allowed only if
   the round is a non-tip round that is **not readable** (outside the window). Otherwise
-  error `RoundStillReadable = 111` (Cache range). Accounts: `[feed_state, round (w), payer (w)]`;
-  `payer` must equal the recorded payer (`ProgramError::InvalidArgument`); a missing round or
-  state is `ProgramError::UninitializedAccount`.
+  error `RoundStillReadable = 111` (Cache range). Accounts: `[feed_state, round (w), payer (w)]`; check order: derivations → state present →
+  round present (`ProgramError::UninitializedAccount` for either) → tip or still readable
+  (`RoundStillReadable`, 111) → `payer` equals the recorded payer (`ProgramError::InvalidArgument`).
 - **D. Limits** — 1232-byte transactions, ~1.4M compute units, every touched account
   declared. Account declaration convention: fixed accounts first (listed per instruction
   below), then per-item accounts in item order. Uninitialised records are passed as their
@@ -83,8 +93,8 @@ in return data. Proxy readers CPI the Cache and then set their own return data.
 
 Instruction data is a Borsh enum; tags are the variant indices in this order — Cache:
 `initialize`, `on_report`, `set_feed_configs`, `remove_feed_configs`, `set_feed_frozen`,
-`add_feed_admin`, `remove_feed_admin`, `get_feed_permissions`, `has_permission`,
-`is_feed_admin`, `latest_round`, `get_round`, `round_range`, `find_round`, `decimals`,
+`add_feed_admin`, `remove_feed_admin`, `get_feed_permissions`, `has_permission` (keeps its
+`sender` argument — a lookup key, see `06` A.2), `is_feed_admin`, `latest_round`, `get_round`, `round_range`, `find_round`, `decimals`,
 `description`, `is_configured`, `is_frozen`, `version`, `type_and_version`, `get_owner`,
 `transfer_ownership`, `accept_ownership`, `renounce_ownership`, `recover_tokens`,
 `reclaim_round`; Proxy: `initialize`, `latest_round`, `get_round`, `decimals`, `description`,
@@ -111,22 +121,27 @@ Fixed accounts, in order (s = signer, w = writable); surplus accounts are ignore
 - Ownership: `transfer_ownership` / `renounce_ownership`: `[owner (s), config (w)]`;
   `accept_ownership`: `[pending_owner (s), config (w)]`.
 - `recover_tokens(token, to, amount)`: `token` is the mint, `to` the destination token
-  account; accounts `[owner (s), config, source (w), destination (w), token_program]`; `source`
-  must be a token account of that mint owned by the config PDA, which signs the CPI.
+  account; accounts `[owner (s), config, source (w), destination (w), token_program]`. Checks
+  (per `06` K.4, native errors): `token_program` is SPL Token (`IncorrectProgramId`);
+  `destination == to` and `source` is a token account of mint `token` owned by the config PDA
+  (`InvalidArgument`); the config PDA signs the CPI; everything else is left to SPL Token.
 - Cache readers: `[config]`, then per id the records the spec names for that reader (e.g.
   `latest_round` → `feed_state` per id; `get_round` → `feed_state, round`; `decimals` /
   `description` / `is_configured` → `feed_config`; `is_frozen` → `feed_state`;
   `get_feed_permissions` → `feed_config`; `has_permission` → `permission`; `is_feed_admin` →
   `admin_record`). `round_range(data_id, from, to)`: `[config, feed_state]` then the round
-  accounts for `from..=to` (index `id − from`; accounts above the tip may be omitted).
-  `find_round(data_id, timestamp, bound, lo, hi)`: `[config, feed_state]` then rounds for
-  `lo..=hi` (index `id − lo`). The tip is answered from `feed_state`; a supplied tip account is
-  validated but not read. `version`, `type_and_version`, `get_owner`: `[config]`.
+  accounts for `max(from,1)..=to` (index `id − max(from,1)`). `find_round(data_id, timestamp,
+  bound, lo, hi)`: `[config, feed_state]` then rounds for `max(lo,1)..=hi` (index `id −
+  max(lo,1)`). Accounts for ids at or below the tip that lie in the range are mandatory
+  (`ProgramError::NotEnoughAccountKeys` otherwise); accounts above the tip may be omitted; the
+  tip is answered from `feed_state` and its own account, if supplied, is validated but not read. `version`, `type_and_version`, `get_owner`: `[config]`.
 - Proxy `initialize(owner, cache)`: `[config (w), payer (s,w), system_program]`. CPI readers
   (`latest_round`, `get_round`, `decimals`, `description`): `[config, cache_program,
-  cache_config, min_decimals]` then the Cache accounts in the Cache's own convention for
-  `is_frozen` and the delegated reader (the Proxy validates `cache_program` against the stored
-  cache and derives/validates every Cache record before the CPI). `get_min_decimals`: `[config,
+  cache_config, min_decimals]` then **one account group per CPI**, in CPI order, each in the
+  Cache's own per-id convention: first the `is_frozen` group (`feed_state`), then the
+  delegated reader's group (`feed_state` again for `latest_round`; `feed_state, round` for
+  `get_round`; `feed_config` for `decimals`/`description`). The Proxy validates `cache_program`
+  against the stored cache and derives/validates every Cache record before the CPI. `get_min_decimals`: `[config,
   min_decimals]`; `get_cache`, `version`, `type_and_version`, `get_owner`: `[config]`.
   `set_cache`: `[owner (s), payer (s,w), config (w), system_program]`; `set_min_decimals`:
   `[owner (s), payer (s,w), config (w), min_decimals (w), system_program]`; ownership and
@@ -161,8 +176,16 @@ line through `program_stubs::sol_log` (the SBF build uses `sol_log_data`). Host 
 the native `ProgramError` variant; spec errors assert `Custom(code)`. Set the bank's compute
 limit to 1.4M CU; return data is capped at 1024 bytes (long `round_range` results abort with
 the platform failure); set `RUST_TEST_THREADS=4` in `.cargo/config.toml` (parallel banks
-exhaust file handles). Upgrade conditions: deploy the `.so` files behind the upgradeable
-loader with the owner as upgrade authority and upgrade via buffer accounts.
+exhaust file handles). Upgrade conditions (`06` I.2/I.4): the resurrection and cache-swap
+conditions are tested without an upgrade step and a test asserts the `upgrade` tag does not
+exist; additionally, where the `.so` artifacts are present, one test deploys them behind the
+upgradeable loader with the owner as authority and upgrades via a buffer account (skip with a
+message if the artifacts are absent). Emulate "the tip's round entry expired" by deleting the
+tip round account with `set_account`. Keep slot warps ≤ 100k except in retention tests and
+never warp after `set_account` (program-test file-handle exhaustion). Give each write
+transaction a unique nonce (e.g. a tiny self-transfer) so identical instructions are not
+deduplicated. Build settings: allow the deprecated `system_instruction` re-exports, declare
+the `target_os = "solana"` cfg, and disable debug info in test profiles (disk).
 
 ## Decision log
 
