@@ -39,8 +39,9 @@ at the time of the append and `seq` = current ledger:
 - no prior state → `{ shortest_ttl: ttl, grow_to_ttl: ttl, grow_at_ledger: 0 }`.
 - prior state `p`:
   - `grow_at_ledger` = `p.grow_at_ledger`, unless `ttl != p.grow_to_ttl`, in which case
-    `grow_at_ledger = p.latest_round.ledger_seq + ttl + 1` (saturating) — the date by which
-    every round written under the previous plan has aged out.
+    `grow_at_ledger = p.latest_round.ledger_seq + ttl + 1` (saturating), using the **new** `ttl`
+    — the first ledger at which no round written up to the previous tip can still fall inside
+    the new width.
   - `shortest_ttl = min(p.width_at(seq), ttl)` — a lowered TTL narrows the window immediately;
     a raised TTL does not widen it until `grow_at_ledger`.
   - `grow_to_ttl = ttl`.

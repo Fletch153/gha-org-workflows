@@ -53,7 +53,8 @@ The description may be empty.
 accepted round onward and is **never deleted** by any entry point. `Window` is defined in
 `04-retention.md`.
 
-**Bound** — enum `AtOrBefore` (discriminant 0), `AtOrAfter` (discriminant 1).
+**Bound** — enum `AtOrBefore = 0`, `AtOrAfter = 1`. Both variants carry explicit integer
+discriminants (on chains where that changes the enum's encoding, the integer form is the one intended).
 
 ## Actors and authority
 
@@ -96,11 +97,15 @@ functions (`upgrade`, `recover_tokens`, ownership functions) refreshes any stora
 Ownership error codes live in the range 2100–2199 (`OwnerNotSet = 2100`,
 `TransferInProgress = 2101`, `OwnerAlreadySet = 2102`) and must not collide with either
 contract's own error range. The overlay names the library that provides ownership; use it
-rather than re-implementing.
+rather than re-implementing, and accept its exact behaviour as normative even where it is
+more detailed than this table — e.g. its transfer helpers may raise a second code range
+(2200–2299) for pending-transfer faults, `renounce_ownership` fails only while a pending
+transfer is *unexpired*, and `transfer_ownership` with `live_until_ledger = 0` cancels a
+pending transfer. Do not re-validate or renumber library errors.
 
 ## Global invariants
 
-1. Error codes: Cache uses 100–199, Proxy uses 50–99, ownership 2100–2199. Disjoint.
+1. Error codes: Cache uses 100–199, Proxy uses 50–99, ownership library 2100–2299. Disjoint.
 2. Every state-changing entry point that succeeds leaves all of its writes and events; every
    one that fails leaves none of them (atomic per call).
 3. Reads never write feed data, never create records, and never emit events. (They may

@@ -17,7 +17,7 @@ A Cargo workspace (resolver 2) at `out_dir` with three members:
 
 | Crate | Kind | Contents |
 |---|---|---|
-| `data-feeds-common` | `rlib` | the shared lifecycle traits `Versioned` (`version`, `type_and_version` — both implemented by each contract, no default bodies), `Upgradeable` (`upgrade`) and `TokenRecoverable` (`recover_tokens`) (these two as `#[contracttrait]`s with default bodies), their events `Upgraded` and `TokenRecovered`; a `test_utils` module (behind a `testutils` feature and `cfg(test)`) with a tiny mock contract that implements the traits, plus helpers reused by the other crates' tests |
+| `data-feeds-common` | `rlib` | the shared lifecycle traits `Versioned` (`version`, `type_and_version` — both implemented by each contract, no default bodies), `Upgradeable` (`upgrade`) and `TokenRecoverable` (`recover_tokens`) (these two as `#[contracttrait]`s with default bodies), their events `Upgraded` and `TokenRecovered`; a `test_utils` module gated on `cfg(any(test, feature = "testutils"))` so dependants can reuse it via the feature with a tiny mock contract that implements the traits, plus helpers reused by the other crates' tests |
 | `data-feeds-cache` | `cdylib` + `rlib` | `DataFeedsCache`. Public interface split into three contract traits with generated clients: `DataFeedsCacheReader`, `DataFeedsCacheWriter`, `DataFeedsCacheAdmin`; public types `RoundData`, `Bound`, `WorkflowPermission`, `FeedConfig`, `FeedConfigEntry`, `ReportEntry`, `Metadata`, `CacheError`, the `DataId` alias (`BytesN<32>`) and the `DECIMALS` constant. Gate the contract implementation, storage, events and domain logic behind a default-on `contract` feature so the crate can be depended on for its interface alone; expose a `testutils` feature (implies `contract` + `soroban-sdk/testutils`) exporting test helpers |
 | `data-feeds-proxy` | `cdylib` + `rlib` | `DataFeedsProxy`. Contract traits `DataFeedsProxyReader` and `DataFeedsProxyAdmin`; types `Round`, `ProxyReadError`. Depends on `data-feeds-cache` with `default-features = false` (interface + reader client only) so the Cache's exported functions are **not** linked into the Proxy artifact — declare `default-features = false` on the **workspace** `[workspace.dependencies]` line (Cargo ignores it on a member's `workspace = true` line); dev-depends on it with `contract` + `testutils` for integration tests |
 
@@ -27,7 +27,8 @@ cannot live inside the `rlib` common crate.
 
 Dependency pin: `soroban-env-host 26.1.x` allows `ed25519-dalek 3.x`, which does not compile
 with its testutils. After the first resolve run `cargo update -p ed25519-dalek --precise 2.2.0`
-(check in `Cargo.lock`).
+(if the first resolve pulled both 2.x and 3.x, address the 3.x one:
+`cargo update -p ed25519-dalek@3.0.0 --precise 2.2.0`). Check in `Cargo.lock`.
 
 Workspace lints: `unsafe_code = "deny"`. Release profile: `opt-level = "z"`,
 `overflow-checks = true`, `debug = 0`, `strip = "symbols"`, `debug-assertions = false`,
@@ -104,11 +105,16 @@ Storage key enums are part of the upgrade contract — use these exact shapes:
 
 ## Cross-contract calls
 
-The Proxy calls the Cache through the client generated from `DataFeedsCacheReader`
-(`#[contractclient(name = "DataFeedsCacheReaderClient")]`), invoking `is_frozen`,
+The Proxy calls the Cache through the client the SDK generates for the `DataFeedsCacheReader`
+trait (`DataFeedsCacheReaderClient` — `#[contracttrait]` generates it; do not add a second
+`#[contractclient]`), invoking `is_frozen`,
 `latest_round`, `get_round`, `decimals`, `description` by name with single-element `vec!`s for
 the batch functions. Client calls that fail propagate the callee's error as a trap of the
 Proxy call (use the plain client methods, not `try_`).
+
+A `#[contracttrait]` with default bodies re-emits those signatures inside the implementing
+contract's module, so that module must import the types they mention (`Env`, `Address`,
+`BytesN`) even if its own code does not use them.
 
 Upgrade: `env.deployer().update_current_contract_wasm(new_wasm_hash)`. Token recovery:
 `soroban_sdk::token::TokenClient::new(env, &token).transfer(&env.current_contract_address(), &to, &amount)`.
@@ -131,8 +137,11 @@ Upgrade: `env.deployer().update_current_contract_wasm(new_wasm_hash)`. Token rec
   TTL inside `env.as_contract(&id, || env.storage().persistent().get_ttl(&key))` (testutils
   `storage::Persistent` / `Temporary` / `Instance` traits); expire a round by removing its
   temporary entry inside `as_contract`.
-- Assert events by comparing `event.to_xdr(&env, &contract_id)` against
-  `env.events().all().filter_by_contract(&id)`.
+- Assert events by comparing `event.to_xdr(&env, &contract_id)` (needs `soroban_sdk::Event`
+  in scope) against `env.events().all().filter_by_contract(&id)`. `env.events().all()` holds
+  only the **last** invocation's events — assert before making any further call, including
+  read-only ones like a token `balance`.
+- The SDK writes `test_snapshots/` on every test run; add it to `.gitignore`.
 - A mock Cache for Proxy unit tests: a small contract implementing `DataFeedsCacheReader`
   with injectable rounds, latest, frozen flags and a forced error; leave the reads the Proxy
   never uses unimplemented.

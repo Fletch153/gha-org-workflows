@@ -24,7 +24,7 @@ where the condition says "only".
 
 ## Cache — set_feed_configs
 - non-admin caller → 101; empty batch → 103; all-zero id → 107; entry without permissions →
-  103; permission with all-zero workflow name → 105; duplicate permission in one entry → 106;
+  103; permission with all-zero workflow owner → 104; permission with all-zero workflow name → 105; duplicate permission in one entry → 106;
   duplicate id in one batch → 108.
 - an invalid entry aborts the whole batch (earlier valid entries are not written).
 - first-time config emits only `FeedConfigSet` with `decimals = 18`; reconfiguring emits

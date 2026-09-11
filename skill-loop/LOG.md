@@ -47,3 +47,25 @@ Isolation audit clean. 44 tool calls, ~30 min.
 - 05-tests: add the all-zero owner → 104 case.
 - Overlay: `test_utils` gated on `cfg(any(test, feature = "testutils"))`.
 - Overlay: SDK writes `test_snapshots/`; gitignore them.
+
+## Round 3 — skill v2, generator = Sonnet (stress test) — ALL GREEN
+
+Same prompt as round 2, `model: sonnet`, `out_dir=/home/user/df-gen/round-3`. Isolation audit
+clean. 247 tool calls, ~46 min (weaker model needed more iterations but converged).
+
+| Gate | Result |
+|---|---|
+| G1 wasm build | PASS |
+| G2 own tests | PASS — 132 passed, 0 failed (cache 87 / common 3 / proxy 42) |
+| G3 reference conformance | PASS — cache 117/117, proxy 62/62 |
+
+Report highlights: `test_utils` gating wording; ownership library's 2200+ codes vs. the stated
+range; `Bound` needs explicit discriminants on both variants; 104 case missing from tests list.
+
+## Skill v3
+Applied rounds 2+3 feedback (see the two lists above). Not re-validated by a fresh round yet —
+every change is a clarification of behaviour that all three green rounds already exhibited.
+
+## Status
+3/3 rounds green across two model tiers on v1/v2. Stellar target is done; next milestone is a
+second chain overlay, which will test whether `spec/` is truly chain-agnostic.
