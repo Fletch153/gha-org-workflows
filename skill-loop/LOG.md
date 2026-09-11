@@ -140,3 +140,10 @@ foreign discriminators, pre-funded addresses, return-data cap, bad instruction d
 → v6: spec/06 A.2 distinguishes principals from lookup keys; K.3/K.4 (constants not public;
 D.2 validation is never "extra validation"); EVM overlay names `TokenTransferFailed`; Solana
 overlay carries all of the above.
+
+## EVM round 4 — skill v6 — builds, 194 tests, 21 decisions (0 real choices) — CONVERGED
+
+`out_dir=/home/user/df-gen/evm-4`. Verified `forge test` 194/194. Every `[ABI]`/`[BEHAVIOUR]`
+entry restates a spec ruling (view readers, `CacheError(109)`, u32 `now`, no validation where
+the spec is silent) or a Solidity mechanic (calldata→storage copy). Caught one spec
+inconsistency: spec/05 says ownership codes lie in 2100–2199; spec/01/06 say 2100–2299 → v7.
