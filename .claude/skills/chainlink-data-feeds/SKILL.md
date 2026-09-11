@@ -45,9 +45,12 @@ rule for it.
    case convention, omitted `upgrade`); internal helper names are yours.
 3. Implement the shared lifecycle pieces first (`spec/01`), then the Cache (`spec/02`, `spec/04`),
    then the Proxy (`spec/03`).
-4. Write the tests listed in `spec/05-tests.md`. Each listed condition must be covered by at
-   least one test whose name makes the condition recognisable, or be listed in the decision
-   log as not applicable with the `spec/06` rule that makes it so. Add more if you find gaps.
+4. Write the tests. The primary source is `spec/scenarios.json` (schema in
+   `spec/07-scenarios.md`): implement **one test per scenario whose `requires` tags are all
+   in the overlay's `capabilities`**, named by the scenario `id`, asserting exactly what the
+   scenario asserts. List every inapplicable scenario in the decision log under
+   `[TEST-TECHNIQUE]` with the `spec/06` rule. Then check `spec/05-tests.md` (the human
+   summary) for conditions the scenarios do not cover on this platform and add tests for them.
 5. Verify, and fix until all hold:
    - the whole workspace's tests pass;
    - each deployable builds with the overlay's build command;

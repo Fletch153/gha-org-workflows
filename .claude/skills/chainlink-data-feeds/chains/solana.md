@@ -4,6 +4,8 @@ Instantiation of `spec/06` for Solana. Mechanics only; behaviour is in `spec/`.
 
 ## Platform facts (per `spec/06` axis)
 
+- **capabilities:** `[external_upgrade, rent_reclaim]`
+
 - **A. Account model** — case A.2. The authorised principal of an instruction is a
   **signer account** in a fixed position (see account conventions). `sender`/`admin`
   arguments are dropped from instruction data. Owner-only instructions require the owner

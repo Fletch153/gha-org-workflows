@@ -4,6 +4,8 @@ Instantiation of `spec/06` for the EVM. Mechanics only; behaviour is in `spec/`.
 
 ## Platform facts (per `spec/06` axis)
 
+- **capabilities:** `[events_indexed]`
+
 - **A. Account model** — case A.2: caller identity is `msg.sender`. `sender`/`admin`
   arguments are dropped; host failures are a dedicated custom error
   `Unauthorized(address caller)` (no numeric code). A token transfer failure in

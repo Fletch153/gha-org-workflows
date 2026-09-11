@@ -1,5 +1,10 @@
 # Chain overlay — Stellar (Soroban)
 
+
+## Platform facts (per `spec/06` axis)
+
+- **capabilities:** `[per_arg_auth, expiry, network_max_variable, in_contract_upgrade, events_indexed]`
+
 ## Toolchain and dependencies
 
 - Rust `1.96.0`, pinned by a `rust-toolchain.toml` at the workspace root with

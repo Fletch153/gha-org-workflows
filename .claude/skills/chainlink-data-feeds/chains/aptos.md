@@ -4,6 +4,8 @@ Instantiation of `spec/06` for Aptos. Mechanics only; behaviour is in `spec/`.
 
 ## Platform facts (per `spec/06` axis)
 
+- **capabilities:** `[external_upgrade]`
+
 - **A. Account model** — case A.2: the caller identity is the `&signer` parameter of the
   entry point (`signer::address_of`). `sender` (on `on_report`) and `admin` (on
   `set_feed_configs`, `remove_feed_configs`, `set_feed_frozen`) are dropped from the
@@ -225,11 +227,7 @@ unknown feed). The report decoder does not check id widths.
 
 Same format as `SKILL.md` step 6. With this overlay and `spec/06` applied there should be
 no `[ABI]` or `[BEHAVIOUR]` entries; any that remain are written back into this overlay by
-the run that produced them (SKILL.md step 7). The first run (`out_dir = df-gen/aptos-1`)
-wrote back its 12 `[ABI]` and 8 `[BEHAVIOUR]` entries into the sections above. The second run
-(`out_dir = df-gen/aptos-2`) produced 0 `[ABI]` and 3 `[BEHAVIOUR]` entries (instance check
-first; `find_round` bound validation before the state lookup; `recover_tokens` event ordering
-and framework failure codes), written back into axes A and K above.
+the run that produced them (SKILL.md step 7).
 
 ## Retention constant
 

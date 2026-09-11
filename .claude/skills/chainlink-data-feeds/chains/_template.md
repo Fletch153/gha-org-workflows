@@ -7,6 +7,8 @@ them impossible; when you deviate from a default, the reason goes in the decisio
 
 ## Platform facts (per `spec/06` axis)
 
+- **capabilities:** `[<tags from spec/07: per_arg_auth, expiry, network_max_variable, in_contract_upgrade, external_upgrade, rent_reclaim, events_indexed>]`
+
 - **A. Account model** — <case A.1 (per-argument auth: name the primitive) or A.2
   (caller identity: name it — `msg.sender`, signer account, `&signer`, …)>. <Which spec
   arguments are dropped (A.2: `sender` on `on_report`, `admin` on the three admin batches;
