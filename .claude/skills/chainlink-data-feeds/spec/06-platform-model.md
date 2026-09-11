@@ -21,7 +21,9 @@ Rule:
    accounts, Move `signer`), the authorised principal **is the caller**: the `sender`/`admin`
    argument is **removed** from the interface (it would be redundant and a spoofing footgun),
    and every rule in the spec that reads "host-authorise `sender`" reads "the caller is the
-   sender". Events and records that carry `sender` use the caller identity.
+   sender". Events and records that carry `sender` use the caller identity. Only arguments
+   that are host-authorised principals are removed; an address that is merely a lookup key
+   (`has_permission`'s `sender`, `is_feed_admin`'s `admin`, `remove_feed_admin`'s `admin`) stays.
 3. Host authorisation failures are the platform's native failure (a missing signer, an
    unauthorised caller), never a spec error code. On platforms where every failure is a
    contract revert, use a dedicated error *type* that lies outside all numeric ranges.
@@ -214,7 +216,13 @@ Rule:
    token signals (revert, `false`, missing code) fails the call with a host-style error type
    outside all numeric ranges — the contract adds no validation of its own.
 3. `DECIMALS` and every `decimals`/`min` value are u32 (or the platform's nearest unsigned
-   width, stated by the overlay).
+   width, stated by the overlay). Constants (`DECIMALS`, `DATA_RETENTION_TTL`) are not exposed
+   as public functions.
+4. "The contract adds no validation of its own" (K.2 and the "do nothing extra" rule) never
+   suspends D.2: on account-model chains every supplied record/account is still checked for
+   derivation, ownership and consistency with the arguments before use (e.g. that a token
+   account belongs to the named mint and to the contract's authority); those checks fail with
+   native error types, never spec codes.
 
 ## L. Cross-contract calls
 

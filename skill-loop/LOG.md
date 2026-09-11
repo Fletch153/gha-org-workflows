@@ -128,3 +128,15 @@ that changes ABI or behaviour (only internal names / test technique are acceptab
 constants not exposed as getters, hand-written strict decoder); the rest are internal names
 and test technique. → v6: overlay names `TokenTransferFailed(address token)`; spec/06 K states
 constants are not public functions.
+
+## Solana round 2 — skill v5 — builds, 109 tests, 21 decisions (5 ABI, 8 behaviour)
+
+`out_dir=/home/user/df-gen/solana-2`. Verified `cargo test --workspace` 109/109, both `.so`.
+Log (`solana-round2-DECISIONS.md`): remaining ABI gaps were overlay omissions — program ids,
+config account layout, round payload order, `has_permission`'s `sender` (a lookup key, not a
+principal), Proxy CPI account grouping; behaviour gaps were D.2 validation details (range
+edge cases, `recover_tokens` account checks vs "no extra validation", reclaim check order,
+foreign discriminators, pre-funded addresses, return-data cap, bad instruction data).
+→ v6: spec/06 A.2 distinguishes principals from lookup keys; K.3/K.4 (constants not public;
+D.2 validation is never "extra validation"); EVM overlay names `TokenTransferFailed`; Solana
+overlay carries all of the above.

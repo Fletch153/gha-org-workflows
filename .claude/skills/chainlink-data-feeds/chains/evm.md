@@ -6,7 +6,8 @@ Instantiation of `spec/06` for the EVM. Mechanics only; behaviour is in `spec/`.
 
 - **A. Account model** — case A.2: caller identity is `msg.sender`. `sender`/`admin`
   arguments are dropped; host failures are a dedicated custom error
-  `Unauthorized(address caller)` (no numeric code).
+  `Unauthorized(address caller)` (no numeric code). A token transfer failure in
+  `recoverTokens` (revert, `false`, or no code at `token`) is `TokenTransferFailed(address token)`.
 - **B. Storage** — mappings keyed by the spec keys; presence per B.2; instance singletons
   are plain state variables. No storage payer (gas only).
 - **C. Expiry** — none (case C.3). Sequence unit is `block.number`. No reclaim.
