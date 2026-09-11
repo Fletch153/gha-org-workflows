@@ -1,68 +1,60 @@
 # Chain overlay — EVM (Solidity / Foundry)
 
-This overlay gives **mechanics only**. The spec was written against a platform with explicit
-per-argument authorisation, state expiry, numeric error codes, optional return values and
-in-place code upgrade. Where the EVM has no direct equivalent, **you** choose the closest
-faithful realisation and you **must record every such choice** (see "Decision log" below).
-Do not skip a spec behaviour because it is awkward on the EVM; realise it or record why it
-cannot be realised.
+Instantiation of `spec/06` for the EVM. Mechanics only; behaviour is in `spec/`.
+
+## Platform facts (per `spec/06` axis)
+
+- **A. Account model** — case A.2: caller identity is `msg.sender`. `sender`/`admin`
+  arguments are dropped; host failures are a dedicated custom error
+  `Unauthorized(address caller)` (no numeric code).
+- **B. Storage** — mappings keyed by the spec keys; presence per B.2; instance singletons
+  are plain state variables. No storage payer (gas only).
+- **C. Expiry** — none (case C.3). Sequence unit is `block.number`. No reclaim.
+- **D. Limits** — 24 KiB deployed code per contract (EIP-170); gas. Batches are bounded by gas
+  only. No record declaration convention.
+- **E. Errors** — one custom error per family carrying the code: `CacheError(uint32 code)`,
+  `ProxyReadError(uint32 code)`, `OwnableError(uint32 code)`; names as constants.
+- **F. Serialisation** — `abi.encode` for `encode(x)`; report body is exactly
+  `abi.encode(ReportEntry[])` (strict decode; trailing bytes → `MalformedReport`).
+- **G. Optionals** — `{bool present; T value;}` structs; optional address = `address(0)`.
+- **H. Events** — `indexed` for topic fields.
+- **I. Upgrade** — case I.3: no `upgrade`/`Upgraded`; contracts are immutable.
+- **J. Ownership** — no library; implement the table (`live_until_ledger` in blocks).
+- **K. Naming** — mechanical snake_case → camelCase for functions, arguments, event names
+  and event/struct fields (`latest_round` → `latestRound`, `data_ids` → `dataIds`,
+  `ownership_transfer` → `OwnershipTransfer`); error/enum/constant names unchanged.
+  Token amount is `uint256`. `workflow_owner` is `address`.
+- **L. Cross-contract** — high-level interface calls; the Cache's revert data bubbles
+  through the Proxy unchanged.
 
 ## Toolchain
 
 - Foundry (`forge`, `cast`, `anvil`) at `~/.foundry/bin` — add it to `PATH`.
 - Solidity `0.8.30`, static binary at `~/.foundry/bin/solc`. Compiler downloads are blocked, so
-  `foundry.toml` must contain `solc = "/root/.foundry/bin/solc"` (absolute path) and
-  `solc_version` must not be set.
-- `forge-std` via `forge init` / `forge install` (git access works). No other dependency is
-  mandated; if you take one (e.g. an ownership or ERC-20 library), record it as a decision.
+  `foundry.toml` must contain `solc = "/root/.foundry/bin/solc"` (absolute path) and no
+  `solc_version`. Set `lint_on_build = false`.
+- `forge-std` via `forge init` / `forge install` (git access works). No other dependency.
 
-## Layout
+## Layout and commands
 
-A Foundry project at `out_dir`: `src/DataFeedsCache.sol`, `src/DataFeedsProxy.sol`, shared
-pieces under `src/` (interfaces, shared abstract contracts, libraries), tests under `test/`.
-Deployable artifacts: `forge build` → `out/<File>.sol/<Contract>.json` (ABI + bytecode).
-Tests: `forge test`.
+Foundry project at `out_dir`: `src/DataFeedsCache.sol`, `src/DataFeedsProxy.sol`, shared
+pieces under `src/` (interfaces, abstract lifecycle contracts, libraries), tests under `test/`.
+Artifacts: `forge build` → `out/<File>.sol/<Contract>.json`. Tests: `forge test`.
 
 ## Type vocabulary
 
-| Spec | Solidity |
-|---|---|
-| `data_id`, `workflow_cid`, hashes | `bytes32` |
-| `workflow_owner` (20 bytes) | `bytes20` or `address` — your call, record it |
-| `workflow_name` (10 bytes) | `bytes10` |
-| `report_id` | `bytes2` |
-| `answer` (I256) | `int256` |
-| `String` | `string` |
-| `List<T>` | `T[]` (memory for arguments/returns) |
-| `Bytes` | `bytes` |
-| `Address` | `address` |
-| records | `struct`s; field **names** and **order** are ABI |
-| `Bound` | `enum` with the given ordering |
-| events | `event`s; spec "topic fields" become `indexed` parameters, in the listed order |
-| ledger sequence / `live_until_ledger` | `block.number` |
+`bytes32` for ids/hashes; `bytes10` workflow name; `bytes2` report id; `int256` answer;
+`string`; `T[]` lists; `bytes`; `address`; `struct`s with spec field order; `enum Bound`.
 
 ## Testing notes
 
-`vm.prank` / `vm.startPrank` to set the caller; `vm.expectRevert` (with the exact error
-selector/data) for failures; `vm.expectEmit` for events; `vm.roll` to move block numbers;
-a minimal ERC-20 mock for `recover_tokens`. For "upgrade"-style conditions, test whatever
-realisation you chose.
+`vm.prank`/`vm.startPrank` for callers; `vm.expectRevert(abi.encodeWithSelector(...))` for
+exact errors; `vm.expectEmit`/`vm.recordLogs` for events (recorded logs are not rolled back
+on revert — assert atomicity via state); `vm.roll` for block numbers; a minimal ERC-20 mock
+for `recover_tokens`. Retention-window conditions that vary the network maximum do not apply
+(it is unbounded); cover the window with `vm.roll` past `ledger_seq + round_ttl`.
 
-## Decision log (mandatory)
+## Decision log
 
-Write `out_dir/DECISIONS.md`. One entry per choice the spec + this overlay did not determine.
-Format per entry:
-
-- **Q** — the question, quoting the spec line(s) that triggered it.
-- **Options** — the realisations you considered.
-- **Chose** — what you did.
-- **Why** — the reasoning.
-- **Rule** — the single chain-agnostic sentence that, if it were in `spec/`, would have made
-  this decision deterministic for *any* chain.
-
-Expected areas (not exhaustive): the account model ("host-authorise `x`" vs `msg.sender`);
-what happens to the `sender`/`admin` arguments; state expiry and the retention window; error
-signalling (numeric codes vs custom errors); `Option` returns and batch reads; the canonical
-serialisation used for the permission hash and for report decoding; in-place upgrade; the
-ownership model and `live_until_ledger`; "refresh lifetime" no-ops; the meaning of the
-`FeedFrozen` code raised by the Proxy; naming conventions (snake_case spec vs Solidity style).
+Same format as `SKILL.md` step 6. With this overlay and `spec/06` applied there should be
+few or no entries; anything left is a gap to report.

@@ -94,9 +94,8 @@ Event names are exact, including case: the ownership events are snake_case (they
 ownership library), `Upgraded` and `TokenRecovered` are PascalCase. None of the lifecycle
 functions (`upgrade`, `recover_tokens`, ownership functions) refreshes any storage lifetime.
 
-Ownership error codes live in the range 2100–2199 (`OwnerNotSet = 2100`,
-`TransferInProgress = 2101`, `OwnerAlreadySet = 2102`) and must not collide with either
-contract's own error range. The overlay names the library that provides ownership; use it
+Ownership error codes live in the range 2100–2299 (full table in `06`, axis E) and must not
+collide with either contract's own error range. The overlay names the library that provides ownership; use it
 rather than re-implementing, and accept its exact behaviour as normative even where it is
 more detailed than this table — e.g. its transfer helpers may raise a second code range
 (2200–2299) for pending-transfer faults, `renounce_ownership` fails only while a pending

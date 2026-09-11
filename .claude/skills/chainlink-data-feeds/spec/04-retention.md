@@ -1,9 +1,10 @@
 # 04 — Storage lifetimes and the retention window (Cache)
 
-This file applies to chains where stored entries have a **time-to-live (TTL)** measured in
-ledgers and expire unless refreshed (state expiration / rent). The overlay maps the vocabulary
-(`max_ttl`, tiers, "refresh") to concrete platform calls. On a chain without expiry, treat every
-lifetime rule as a no-op and the window as unbounded.
+The **lifetime rules** below apply to chains where stored entries have a time-to-live (TTL)
+measured in ledgers and expire unless refreshed; on a chain without expiry every lifetime rule
+is a no-op and the "network maximum" is unbounded (see `06`, axis C). The **window** section is
+behaviour and applies on every chain. The overlay maps the vocabulary (`max_ttl`, tiers,
+"refresh") to concrete platform calls.
 
 ## Tiers and lifetimes
 

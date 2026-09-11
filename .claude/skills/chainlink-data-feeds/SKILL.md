@@ -17,11 +17,15 @@ look for prior implementations; the spec is the source of truth and is deliberat
 ## Procedure
 
 1. Read, in order, every file under `spec/` (numbered), then `chains/<chain>.md`. Read all of it
-   before writing anything — later files constrain earlier ones.
+   before writing anything — later files constrain earlier ones. `spec/06-platform-model.md`
+   decides how the abstract platform of `01`–`05` maps onto the target chain; its rules win
+   over any literal reading of `01`–`05` that the chain cannot express.
 2. Create the project layout the overlay prescribes (crate names, module split, manifests,
    toolchain pins) exactly. Names on the public surface (functions, argument names, types,
    fields, error codes, event names and fields, storage keys) are part of the on-chain ABI and
-   must match the spec byte-for-byte; internal helper names are yours.
+   must match the spec byte-for-byte, subject only to the mappings of `spec/06` (dropped
+   `sender` arguments on caller-identity chains, a declared case convention, omitted
+   `upgrade`); internal helper names are yours.
 3. Implement the shared lifecycle pieces first (`spec/01`), then the Cache (`spec/02`, `spec/04`),
    then the Proxy (`spec/03`).
 4. Write the tests listed in `spec/05-tests.md`. Each listed condition must be covered by at
