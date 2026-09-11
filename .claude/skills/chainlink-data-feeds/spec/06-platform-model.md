@@ -44,12 +44,14 @@ Rule:
 2. Presence: use the platform's presence primitive (entry `has`, account exists). Where none
    exists, a record is present iff a field that is never zero for a written record is
    non-zero (`FeedConfig` → non-empty permissions; `FeedState`/`Round` → `round_id != 0`;
-   sets → boolean). `MinDecimals` is the exception — `0` is a valid minimum — so it carries an
-   explicit presence flag.
+   sets → boolean; the pending ownership offer → `live_until_ledger != 0`, since `0` is the
+   cancel branch and past values are rejected). `MinDecimals` is the exception — `0` is a valid
+   minimum — so it carries an explicit presence flag.
 3. "Instance" storage (the contract's own singletons: owner, `Cache`) lives in the
    contract's own state unit (instance storage, contract storage slots, a config account).
-4. Storage layout (keys, seeds, slot order, account layouts) is part of the upgrade contract
-   and must be stated by the overlay if the platform supports upgrades.
+4. Storage layout (keys, seeds, slot order, account layouts) is documented in the overlay
+   on every platform (it is the upgrade contract where upgrades exist, and the migration
+   reference where they do not).
 5. Who pays for storage: where writes require an explicit payer (rent, account creation),
    the payer is the transaction's fee payer / the authorised caller of that entry point; the
    contract never fronts storage costs.
@@ -100,11 +102,13 @@ Rule:
    up front, with a dedicated "record not supplied" error type outside all numeric ranges).
 2. Where the caller must declare touched records in advance (Solana accounts), the overlay
    defines the declaration convention (ordering, derivation) and the entry point validates
-   every supplied record against its expected derivation before use. Native account checks
-   (signatures, derivation, ownership) come first — right after authorisation and loading the
-   contract's own config — and precede the spec's contract-level validations; batch entry
-   points validate each item's records at the point the item is consumed. A reclaim
-   instruction (C.4) emits no event.
+   every supplied record against its expected derivation before use. On every platform,
+   host-level checks — instance/config presence, signatures, record derivation and ownership,
+   argument widths, enum discriminants — come first, right after authorisation and loading
+   the contract's own state, and precede the spec's contract-level validations; batch entry
+   points validate each item's records at the point the item is consumed. An invalid enum
+   discriminant or mis-sized fixed-width argument is a host failure, never a spec code. A
+   reclaim instruction (C.4) emits no event.
 3. Code size limits (e.g. 24 KiB EVM) are met by internal module/library splitting, never by
    dropping behaviour or splitting one logical contract into two deployables with different
    entry points. Two deployables total: Cache and Proxy.
@@ -129,7 +133,8 @@ Rule:
 1. Every spec error is realised as the platform's native error primitive carrying **exactly**
    that code: contract-error enums (Soroban), `Custom(code)` program errors (Solana), one
    typed error per family carrying the code (EVM `error CacheError(uint32 code)`).
-2. Names are kept as constants/enum variants alongside the codes.
+2. Names are kept as constants/enum variants alongside the codes; they are not exposed as
+   public functions.
 3. A failure propagates across contracts with the callee's type and code unchanged.
 4. Host failures (auth, decode traps, limits) are never given a spec code (see A.3, D.1).
 
@@ -152,8 +157,9 @@ Rule:
 
 Rule:
 1. `Option<T>` uses the platform's native optional if it has one (Soroban `Option`, Borsh
-   `Option`). Otherwise a `{present: bool, value: T}` struct; an optional **address** may
-   instead use the platform's zero/default address as "absent".
+   `Option`). Otherwise a `{present: bool, value: T}` struct; an optional **address** —
+   stored, passed or returned (`get_owner`) — may instead use the platform's zero/default
+   address as "absent".
 2. `Result<T, E>` is the platform's native return/failure channel; readers that never fail
    simply return `T` on platforms without a `Result` type.
 
@@ -163,7 +169,8 @@ Rule:
 1. Event name and field names/order are as in the spec. "Topic fields" use the platform's
    indexing mechanism (Soroban topics, EVM `indexed`); on platforms without indexing the
    fields are emitted in order with the name as the first element.
-2. Events are emitted only on success and are rolled back with the call on failure; where a
+2. Events are emitted only on success, after the effect they describe has been applied
+   (a transfer, a storage write), and are rolled back with the call on failure; where a
    platform's *test harness* does not roll logs back, tests assert atomicity via state.
 
 ## I. Upgradeability
@@ -221,8 +228,9 @@ Rule:
    native equivalent: token amounts use the platform's native token amount type
    (`i128` Soroban, `uint256` EVM, `u64` Solana); addresses use the native address type.
    `recover_tokens` hands `amount` to the token's own transfer unchanged; any failure the
-   token signals (revert, `false`, missing code) fails the call with a host-style error type
-   outside all numeric ranges — the contract adds no validation of its own.
+   token signals (revert, `false`, missing code, malformed return data) fails the call with a
+   host-style error type outside all numeric ranges; a transfer that returns no data counts
+   as success — the contract adds no validation of its own.
 3. `DECIMALS` and every `decimals`/`min` value are u32 (or the platform's nearest unsigned
    width, stated by the overlay). Constants (`DECIMALS`, `DATA_RETENTION_TTL`) are not exposed
    as public functions.
@@ -254,8 +262,9 @@ Rule:
    for its argument types; readers are view functions. Do not add flattened or byte-encoded
    variants.
 2. Where struct fields are private outside their module, expose public accessors named
-   `<struct_snake>_<field>` and constructors `new_<struct_snake>`; field names and order stay
-   the ABI. Error names may be private constants when the platform offers nothing better.
+   `<struct_snake>_<field>` and constructors `new_<struct_snake>` for records that appear on
+   the public surface (not for internal records such as `FeedState`/`Window`); field names
+   and order stay the ABI. Error names may be private constants when the platform offers nothing better.
 3. Constructor naming follows the platform's idiom (`__constructor`, `initialize`, `create`);
    its arguments are the spec's (`owner`, and `cache` for the Proxy) plus whatever the
    instance model of L.2 needs, in that order after any signer.
