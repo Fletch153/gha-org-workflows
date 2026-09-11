@@ -79,3 +79,36 @@ Multi-step scenarios execute in order against one fresh environment. Steps after
 ```
 
 `id` is `<contract>.<function or group>.<condition>` in snake_case and is the test name.
+
+## Additions used by the corpus (normative; `scenarios.json` `_readme` restates them)
+
+- **`constants` / `macros`** objects at the top of the file. Macro `seed`:
+  `{"step":"seed","on":C,"data_id":D,"as":S,"n":N}` = for k in 1..=N: `advance {to: 100+k}`
+  then `on_report` as S with default metadata (`owner:0x11`, `name:0x22`, cid `zero32`,
+  report_id `0x0000`) and one entry `{data_id: D, answer: k*100, timestamp: k*10}`, expected ok.
+- `advance` also takes `{"to": n}` — set the sequence to absolute `n` (environment starts at 0;
+  every `to` is monotone within a scenario).
+- `{"step":"age_ttl"}` — advance to half the network maximum so every refreshable lifetime is
+  measurably below the maximum; requires `expiry`.
+- `expect_ttl.is` also accepts `"below_max"`. Keys: `record` is `instance`, or
+  `FeedConfig`/`FeedState`/`MinDecimals` with `data_id`, `FeedAdmin` with `admin`,
+  `Permission` with `data_id`+`sender`+`owner`+`name`.
+- `expect_events.ordered: true` — the listed events must appear in that relative order.
+- `deploy` also takes `what: mock_cache | mock_cache2` (bound to the names `cache`/`cache2`): a
+  Cache double with injectable state, used by every Proxy unit scenario. State is set with
+  `{"step":"mock_cache","on":…,"data_id":D,"rounds":[…],"latest":{…},"frozen":bool,"fail_with":code}`
+  (only the given fields change). The double answers `decimals([..])` with 18 and
+  `description([..])` with `"MOCK"` for any id; `latest_round`/`get_round` from `latest`/`rounds`
+  (`null` when unset); `is_frozen` from `frozen` (false when unset); once `fail_with` is set,
+  every `latest_round`/`get_round`/`decimals`/`description` call returns that Cache error
+  (`is_frozen` still answers). Rounds carry `round_id`, `answer`, `timestamp`.
+- `{"step":"expect_balance","token":"token","of":ACTOR,"is":n}` — token balance of an actor.
+- `{"step":"expect_error_codes","contract":C,"codes":{Name:code},"range":[lo,hi],"ownership_range":[lo,hi]}`
+  — static assertion on error numbering (see `06` E).
+- `call.expect` also accepts `{"decode_fail": true}` — the platform decoder's failure for
+  undecodable report bytes (`06` F.2; `MalformedReport` where the decoder returns an error).
+- `on_report` takes `args: {sender, report}`; the test splits `report` into the metadata and
+  body byte arguments. `report.trailing_bytes` (hex) is appended after the canonical body;
+  `raw_metadata`/`raw_report` replace the encoded form verbatim.
+- `expire_round` carries `on`.
+- **Value matching** in `expect.value`: an object asserts only the fields it lists (partial match); a list asserts length and each element positionally; `null` asserts absence/None; `"_"` matches anything at that position; `"some"` matches any non-null value. Addresses are actor names or contract names (`cache`, `cache2`, `proxy`). Answers are decimal strings. `bound` is `AtOrBefore`|`AtOrAfter`. Permissions in values/events/entries are `{sender, owner, name}` (the spec's `allowed_sender`, `allowed_workflow_owner`, `allowed_workflow_name`).
