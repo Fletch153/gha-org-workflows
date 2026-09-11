@@ -10,7 +10,11 @@ where the condition says "only".
 ## Cache — constructor / lifecycle
 - constructor stores the owner; `get_owner` returns it.
 - `version() == 1`; `type_and_version() == "DataFeedsCache 1.0.0"`.
-- two-step ownership: transfer then accept makes the new owner the owner.
+- two-step ownership: transfer then accept makes the new owner the owner; an offer past its
+  `live_until_ledger` cannot be accepted (2203); cancelling with `0` removes the offer
+  (2200 when none, 2202 when the address differs); an offer dated in the past is rejected
+  (2201); renounce is refused while an unexpired offer exists (2101) and succeeds after it
+  expires; owner-only calls with no owner fail 2100.
 - `recover_tokens` moves the requested amount of a token held by the contract to the destination.
 - `upgrade` swaps code in place (upgrade to a distinct artifact, prove the new code runs at the
   same address).

@@ -33,7 +33,8 @@ look for prior implementations; the spec is the source of truth and is deliberat
 5. Verify, and fix until all three hold:
    - the whole workspace's tests pass;
    - each contract builds to the chain's deployable artifact using the overlay's build command;
-   - the upgrade-related tests run against artifacts you built from your own crates.
+   - where the platform has a contract-invocable upgrade (`spec/06` I.1), the upgrade-related
+     tests run against artifacts you built from your own crates.
 6. Keep a decision log at `out_dir/DECISIONS.md`: one entry for every choice that the spec
    plus the overlay did not determine (the overlay says what format to use). If the overlay
    determines everything, the file says so. Never silently pick; write it down.

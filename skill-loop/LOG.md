@@ -104,3 +104,18 @@ left: unnamed struct/library names, ownership-table trigger order and cancel/exp
 lifetime refresh, TTL-varying window, sender-without-auth).
 → v5: full ownership semantics table in spec/06 J (taken from the Stellar library's exact
 behaviour), presence exception for `MinDecimals`, token failure rule, overlay fixes.
+
+## Solana round 1 — skill v4 — builds, 159 tests, 24 decisions
+
+`out_dir=/home/user/df-gen/solana-1`. Isolation clean. Verified: `cargo test --workspace`
+159/159; both `.so` built; no `upgrade` instruction (I.2). Decisions (`solana-round1-DECISIONS.md`)
+were overwhelmingly gaps in the overlay's account conventions (admin record, ownership /
+recover / reclaim accounts, discriminators, instruction tags, config sizing, rent flows,
+history-read indexing) plus the ownership-trigger questions also raised on EVM.
+→ v5: spec/06 J now the full ownership semantics (from the Stellar library); C.3 says how
+TTL-varying window conditions are tested on constant-TTL chains; Solana overlay carries the
+complete instruction/account table.
+
+## Skill v5 — stop criterion for the multi-chain loop
+A chain is "done" when: artifact builds; own tests pass; the decision log contains no entry
+that changes ABI or behaviour (only internal names / test technique are acceptable).

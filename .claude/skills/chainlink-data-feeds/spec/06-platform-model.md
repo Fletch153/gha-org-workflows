@@ -42,7 +42,8 @@ Rule:
 2. Presence: use the platform's presence primitive (entry `has`, account exists). Where none
    exists, a record is present iff a field that is never zero for a written record is
    non-zero (`FeedConfig` → non-empty permissions; `FeedState`/`Round` → `round_id != 0`;
-   sets → boolean).
+   sets → boolean). `MinDecimals` is the exception — `0` is a valid minimum — so it carries an
+   explicit presence flag.
 3. "Instance" storage (the contract's own singletons: owner, `Cache`) lives in the
    contract's own state unit (instance storage, contract storage slots, a config account).
 4. Storage layout (keys, seeds, slot order, account layouts) is part of the upgrade contract
@@ -66,7 +67,11 @@ Rule:
    literally (pin, refresh, temporary rounds never refreshed).
 3. Platforms **without expiry**: every "pin/refresh lifetime" is a no-op; the "network
    maximum" is unbounded so `round_ttl = DATA_RETENTION_TTL`; rounds are never deleted by the
-   contract. Readers whose only writes were lifetime refreshes become pure reads.
+   contract. Readers whose only writes were lifetime refreshes become pure reads. The window
+   arithmetic of `04` is still implemented in full; the `05` conditions that vary the TTL are
+   tested directly against the window helper (the public interface cannot vary it), the
+   lifetime-refresh conditions are tested as persistence, and the "network maximum below the
+   minimum entry lifetime" condition does not apply.
 4. Platforms with **rent-exempt persistent accounts** (Solana): as 3, and the overlay may
    add a permissionless *reclaim* of a round that is no longer readable (returning rent to
    its payer). Reclaim must not affect any readable round or the tip; if the overlay does not
@@ -165,19 +170,36 @@ Rule:
 3. If the platform has **no** native mechanism (EVM), omit `upgrade`/`Upgraded`. Do **not**
    emulate with delegatecall/proxy patterns. The migration path is a new deployment plus the
    Proxy's `set_cache`.
-4. In all cases the storage layout is documented and the self-upgrade test conditions apply
-   only where 1 or 2 holds.
+4. In all cases the storage layout is documented. The self-upgrade test conditions of `05`
+   and the "upgrade-related tests" step of `SKILL.md` apply only where rule 1 holds; under 2
+   and 3 the resurrection and cache-swap conditions are tested without the upgrade step, and
+   a test asserts that no `upgrade` entry point exists.
 
 ## J. Ownership and time
 
-Rule:
-1. Two-step ownership as in `01`, with the pending offer valid **through** `live_until_ledger`
-   inclusive, measured in the platform sequence unit of C.5; `transfer_ownership` with
-   `live_until_ledger = 0` cancels a pending offer (still emits `ownership_transfer` with 0);
-   `renounce_ownership` fails with `TransferInProgress` only while an unexpired offer exists;
-   owner-gated calls with no owner fail `OwnerNotSet`.
-2. Use the ownership library the overlay names (its exact behaviour is normative);
-   otherwise implement this table directly.
+Rule: use the ownership library the overlay names (its exact behaviour is normative);
+otherwise implement **exactly** the following, with `now` = the platform sequence unit of C.5.
+Ownership events carry no topic fields.
+
+- **Owner gating** (every owner-only function): no owner recorded → `OwnerNotSet` (2100);
+  then host-authorise the recorded owner.
+- **`transfer_ownership(new_owner, live_until_ledger)`** — owner-gated, then:
+  - `live_until_ledger == 0` → *cancel*: no pending offer → `NoPendingTransfer` (2200);
+    pending address ≠ `new_owner` → `InvalidPendingAccount` (2202); else remove the offer.
+  - otherwise: `live_until_ledger < now` (or above the platform's maximum offer horizon,
+    where one exists) → `InvalidLiveUntilLedger` (2201); else store `{new_owner,
+    live_until_ledger}`, replacing any previous offer.
+  - in both branches, on success emit `ownership_transfer { old_owner, new_owner,
+    live_until_ledger }` with the arguments as passed.
+- **`accept_ownership()`** — no pending offer → `NoPendingTransfer` (2200); `now >
+  live_until_ledger` → `TransferExpired` (2203); host-authorise the pending address; set it as
+  owner; clear the offer; emit `ownership_transfer_completed { new_owner }`.
+- **`renounce_ownership()`** — owner-gated; a pending offer with `now <= live_until_ledger`
+  → `TransferInProgress` (2101) (an expired offer is simply discarded); clear the owner; emit
+  `ownership_renounced { old_owner }`.
+- **`get_owner()`** — the recorded owner or absent.
+- `OwnerAlreadySet` (2102) belongs to the internal set-owner helper (constructor path) and is
+  unreachable through the public interface; define it for table completeness.
 
 ## K. Naming and numeric widths
 
@@ -188,6 +210,9 @@ Rule:
 2. Type widths are as in `01` except where the overlay maps a spec type to the platform's
    native equivalent: token amounts use the platform's native token amount type
    (`i128` Soroban, `uint256` EVM, `u64` Solana); addresses use the native address type.
+   `recover_tokens` hands `amount` to the token's own transfer unchanged; any failure the
+   token signals (revert, `false`, missing code) fails the call with a host-style error type
+   outside all numeric ranges — the contract adds no validation of its own.
 3. `DECIMALS` and every `decimals`/`min` value are u32 (or the platform's nearest unsigned
    width, stated by the overlay).
 

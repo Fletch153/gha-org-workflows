@@ -16,7 +16,8 @@ Instantiation of `spec/06` for the EVM. Mechanics only; behaviour is in `spec/`.
   `ProxyReadError(uint32 code)`, `OwnableError(uint32 code)`; names as constants.
 - **F. Serialisation** — `abi.encode` for `encode(x)`; report body is exactly
   `abi.encode(ReportEntry[])` (strict decode; trailing bytes → `MalformedReport`).
-- **G. Optionals** — `{bool present; T value;}` structs; optional address = `address(0)`.
+- **G. Optionals** — `{bool present; T value;}` structs named `OptionalRoundData`,
+  `OptionalU32`, `OptionalString`; optional address = `address(0)`.
 - **H. Events** — `indexed` for topic fields.
 - **I. Upgrade** — case I.3: no `upgrade`/`Upgraded`; contracts are immutable.
 - **J. Ownership** — no library; implement the table (`live_until_ledger` in blocks).
@@ -32,7 +33,9 @@ Instantiation of `spec/06` for the EVM. Mechanics only; behaviour is in `spec/`.
 - Foundry (`forge`, `cast`, `anvil`) at `~/.foundry/bin` — add it to `PATH`.
 - Solidity `0.8.30`, static binary at `~/.foundry/bin/solc`. Compiler downloads are blocked, so
   `foundry.toml` must contain `solc = "/root/.foundry/bin/solc"` (absolute path) and no
-  `solc_version`. Set `lint_on_build = false`.
+  `solc_version`; `[profile.default]` also sets `optimizer = true`, `optimizer_runs = 200`,
+  `evm_version = "cancun"`; a `[lint]` section sets `lint_on_build = false` (forge 1.5 reads
+  it there, not under the profile).
 - `forge-std` via `forge init` / `forge install` (git access works). No other dependency.
 
 ## Layout and commands
