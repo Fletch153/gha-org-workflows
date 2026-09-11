@@ -206,3 +206,30 @@ platforms (D.2), M.2 accessors only for public-surface records, events after eff
 implements + tests, step 7 hardens the overlay. Expect 1–2 runs per new chain to reach 0 ABI
 decisions. Solana has not been re-run on the 180-day retention fix (v9); its overlay carries
 the new number.
+
+## Stellar round 4 — skill v11 (scenario corpus), generator = Sonnet — ALL GREEN
+
+`out_dir=/home/user/df-gen/round-4`. Isolation clean. 294 tool calls, ~51 min.
+
+| Gate | Result |
+|---|---|
+| G1 wasm build | PASS (cache 52,091 B / 25 exports; proxy 35,417 B / 16 exports — exactly the spec surface) |
+| G2 own tests | PASS — 182 (179 scenario-derived, named by scenario id, + 3) |
+| G3 reference conformance | PASS — cache 117/117, proxy 62/62 |
+
+Scenario coverage 179/179 (Stellar declares every capability). Decision log: 1 `[ABI]` (no
+case transform — correct), 2 `[BEHAVIOUR]` (single-pass `set_feed_frozen` relying on
+invocation atomicity — identical to the reference; peek fixture reads the Owner slot), rest
+test technique. Three SDK/test pitfalls appended to `chains/stellar.md` (committed here).
+
+### Comparison across Stellar rounds
+| Round | Skill | Model | Own tests | Reference | Open decisions |
+|---|---|---|---|---|---|
+| 1 | v1 | default | 164 | 179/179 | 10 ambiguities guessed right |
+| 2 | v2 | default | 150 | 179/179 | 9 minor |
+| 3 | v2 | Sonnet | 132 | 179/179 | 6 (3 flagged as unclear) |
+| 4 | v11 | Sonnet | 182 | 179/179 | 3, all spec-consistent |
+Functionally identical on every round (same 179 reference tests, same export surface). The
+corpus raised the weaker model's own test count above the strong model's early rounds and
+removed the guesswork; its remaining notes were corpus nits (one misnamed scenario, one
+scenario relying on the mock's unconditional `decimals`).

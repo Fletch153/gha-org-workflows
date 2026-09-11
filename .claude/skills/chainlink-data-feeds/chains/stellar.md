@@ -152,6 +152,27 @@ Upgrade: `env.deployer().update_current_contract_wasm(new_wasm_hash)`. Token rec
   never uses unimplemented.
 - A token for `recover_tokens`: `env.register_stellar_asset_contract_v2(admin)` and its
   `StellarAssetClient::mint`.
+- `#[contracttype]` on a struct cannot have a field typed `Option<S>` where `S` is itself a
+  `#[contracttype]` struct (or an `Option<u32>` field either) — the derive needs
+  `ScVal: TryFrom<&Option<S>>` for spec generation and that bound isn't met, so the crate fails
+  to compile with a confusing `From<S> for ScVal` error pointing at the *outer* struct's
+  `#[contracttype]` line. This only affects nested struct *fields*; `Option<S>` as a function
+  argument or return type (e.g. the Cache reader's `Vec<Option<RoundData>>`) is unaffected. Model
+  a test-only "0 or 1 present" field as `Vec<S>` (or a `bool` + a dummy `S`) instead of `Option<S>`
+  — this bit the Proxy's mock-Cache double (`MockState.latest: Option<MockRound>`,
+  `fail_with: Option<u32>`).
+- `std::panic::set_hook` is a process-global resource; `cargo test`'s default thread pool runs
+  `#[test]` functions concurrently, so a helper that swaps the hook to capture a panic message
+  (for host-auth-failure / library-error assertions where the payload isn't a plain
+  `&str`/`String`) must serialise the whole hook-swap-and-`catch_unwind` critical section behind
+  a `static Mutex<()>` — otherwise two tests racing through it intermittently see each other's
+  hook or an empty captured message.
+- A temporary-tier entry written without an explicit `extend_ttl` call keeps only the network's
+  default/minimum TTL, so a fixture written before an `age_ttl`/ledger-jump step in the *same*
+  test can appear to have expired (reads see it as absent) by the time the assertion runs. A
+  test-only double that doesn't otherwise need TTL semantics (e.g. the Proxy's mock-Cache) should
+  either store its state in the persistent tier (which the test host auto-restores when "expired")
+  or explicitly re-pin its temporary entries to the network maximum on every write.
 
 ## Retention constant
 
