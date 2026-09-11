@@ -195,3 +195,7 @@ the `target_os = "solana"` cfg, and disable debug info in test profiles (disk).
 
 Same format as `SKILL.md` step 6. With this overlay and `spec/06` applied there should be
 few or no entries; anything left is a gap to report.
+
+## Retention constant
+
+Sequence unit nominal duration: 0.4-second slots → `DATA_RETENTION_TTL = 38_880_000` (180 days, `spec/04`).

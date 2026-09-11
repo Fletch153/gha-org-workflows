@@ -162,3 +162,17 @@ round 4. Solana: converged at round 3. Stop criterion met on all three chains.
 
 Rounds run: Stellar 3, EVM 4, Solana 3. Every round: fresh agent, skill-only context,
 isolation audited (no reference reads, no web).
+
+## Aptos round 1 — skill v8, NO overlay existed — Phase 0 + implement — 180 tests
+
+`out_dir=/home/user/df-gen/aptos-1`. The agent authored `chains/aptos.md` from the template,
+verified the toolchain, implemented two Move packages (Cache 124 tests, Proxy 56), and wrote
+all 12 `[ABI]` + 8 `[BEHAVIOUR]` decisions back into the overlay. Isolation clean.
+It reported 8 questions `spec/06` did not answer (entry-argument limits, static linking /
+instance model, sequence-unit choice, field privacy, constructor naming, post-abort
+observability, compile-time-absent entry points, private constants) → v9 adds L.2, M.1–4
+and the C.5 selection rule.
+**Bug found via this run:** `DATA_RETENTION_TTL = 3_110_400` was a Stellar ledger count
+(180 d @ 5 s) baked into the chain-agnostic spec; on EVM/Solana/Aptos it silently meant
+432 d / 14 d / 36 d. v9 specifies retention as 180 days and derives the number per unit in
+each overlay (EVM 1_296_000, Solana 38_880_000, Aptos 15_552_000; Stellar unchanged).

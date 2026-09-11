@@ -14,8 +14,10 @@ behaviour and applies on every chain. The overlay maps the vocabulary (`max_ttl`
 | `FeedAdmin`, `FeedConfig`, `Permission`, `FeedState`, `MinDecimals` | persistent | on **first write** pin to the network maximum; an overwrite of an existing entry does **not** re-pin by itself (every public overwrite path is followed by an explicit refresh, so this is an internal property of the storage helper, not an externally observable one); an explicit **refresh** (where the spec says "refresh its lifetime") sets it back to the network maximum and is a no-op for an absent entry |
 | `Round(data_id, round_id)` | temporary | on first write pin to `round_ttl = min(DATA_RETENTION_TTL, network maximum)`; **never refreshed afterwards**; expires naturally |
 
-`DATA_RETENTION_TTL = 3_110_400` ledgers (180 days of 5-second ledgers). Round history older
-than that is unreadable by design.
+`DATA_RETENTION = 180 days`. `DATA_RETENTION_TTL` is that duration expressed in the platform's
+sequence unit: `round(180 × 86_400 / nominal_seconds_per_unit)`; the overlay states the
+nominal unit duration and the resulting number (Stellar: 5-second ledgers → `3_110_400`).
+Round history older than that is unreadable by design.
 
 "Refresh to the network maximum" means: extend so the entry lives for the maximum the network
 allows from now (threshold = maximum − 1 so the extension always applies; extend-to = maximum).

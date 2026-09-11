@@ -147,3 +147,7 @@ Upgrade: `env.deployer().update_current_contract_wasm(new_wasm_hash)`. Token rec
   never uses unimplemented.
 - A token for `recover_tokens`: `env.register_stellar_asset_contract_v2(admin)` and its
   `StellarAssetClient::mint`.
+
+## Retention constant
+
+Sequence unit nominal duration: 5-second ledgers → `DATA_RETENTION_TTL = 3_110_400` (180 days, `spec/04`).

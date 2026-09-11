@@ -78,9 +78,13 @@ Rule:
    add a permissionless *reclaim* of a round that is no longer readable (returning rent to
    its payer). Reclaim must not affect any readable round or the tip; if the overlay does not
    define it, it does not exist.
-5. `ledger_seq` is the platform's monotonically increasing sequence (ledger, block, slot),
-   stored at the spec's width (u32) by truncating cast, no extra validation. Timestamps in
-   reports are never compared with chain time.
+5. `ledger_seq` is the platform's monotonically increasing sequence, stored at the spec's
+   width (u32) by truncating cast, no extra validation. Choose it in this order: the chain
+   height (ledger, block, slot, version) if contract code can read it **and** the platform's
+   test harness can advance it; otherwise the chain timestamp in seconds. The same unit is
+   used for `live_until_ledger` and for `DATA_RETENTION_TTL`, which is 180 days converted at
+   the unit's nominal duration (`04`). Timestamps in reports are never compared with chain
+   time.
 
 Overlay states: which case; the sequence source; reclaim (if any).
 
@@ -228,8 +232,34 @@ Rule:
    account belongs to the named mint and to the contract's authority); those checks fail with
    native error types, never spec codes.
 
-## L. Cross-contract calls
+## L. Cross-contract calls and the instance model
 
-Rule: the Proxy calls the Cache through the platform's native cross-contract mechanism using
-the Cache's public function names; on account-model platforms the Cache's records the Proxy
-needs are declared by the caller per D.2, and the Proxy validates their derivation.
+Rule:
+1. The Proxy calls the Cache through the platform's native cross-contract mechanism using the
+   Cache's public function names; on account-model platforms the Cache's records the Proxy
+   needs are declared by the caller per D.2, and the Proxy validates their derivation.
+2. Where calls are **statically linked** to one module (Move), a "contract" is *module code +
+   an instance object*: the constructor creates the instance at a derivable address (a
+   caller-supplied `seed` when the constructor cannot return the address), and every entry
+   point takes the instance address as its first non-signer argument. The Proxy stores the
+   Cache instance address and calls the Cache module with it. A "mock Cache" for Proxy unit
+   tests is then realised as test-only injectors on the real Cache module.
+
+## M. Interface surface constraints
+
+Rule:
+1. Where transaction entry points cannot take struct arguments or return values (Move
+   `entry`), a struct-typed batch entry point (`set_feed_configs`) is a public non-entry
+   function reached from a transaction script, with public constructors `new_<struct_snake>`
+   for its argument types; readers are view functions. Do not add flattened or byte-encoded
+   variants.
+2. Where struct fields are private outside their module, expose public accessors named
+   `<struct_snake>_<field>` and constructors `new_<struct_snake>`; field names and order stay
+   the ABI. Error names may be private constants when the platform offers nothing better.
+3. Constructor naming follows the platform's idiom (`__constructor`, `initialize`, `create`);
+   its arguments are the spec's (`owner`, and `cache` for the Proxy) plus whatever the
+   instance model of L.2 needs, in that order after any signer.
+4. Where a test harness cannot observe state after an abort, "aborts and writes nothing"
+   conditions assert the abort code and rely on the platform's transaction atomicity. Where a
+   missing entry point is a compile-time fact, the "no `upgrade` entry point" condition is a
+   named test with a comment rather than a runtime assertion.

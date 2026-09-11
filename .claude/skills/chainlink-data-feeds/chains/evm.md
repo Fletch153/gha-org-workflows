@@ -62,3 +62,7 @@ for `recover_tokens`. Retention-window conditions that vary the network maximum 
 
 Same format as `SKILL.md` step 6. With this overlay and `spec/06` applied there should be
 few or no entries; anything left is a gap to report.
+
+## Retention constant
+
+Sequence unit nominal duration: 12-second blocks (nominal; the overlay may state the target network's actual block time) → `DATA_RETENTION_TTL = 1_296_000` (180 days, `spec/04`).

@@ -121,7 +121,7 @@ where the condition says "only".
 - `is_frozen`: batch preserves order, duplicates and missing; empty → empty.
 
 ## Cache — retention window (through the public interface)
-- a new round's lifetime is `min(3_110_400, network maximum)` and is never refreshed by later
+- a new round's lifetime is `min(DATA_RETENTION_TTL, network maximum)` and is never refreshed by later
   reports. (The storage helper's "overwrite never re-pins / refresh restores to full" rules are
   internal; test them directly against the helper if you wish, not through the contract.)
 - window switches width exactly at `grow_at_ledger`; shrinks immediately when TTL drops; grows
