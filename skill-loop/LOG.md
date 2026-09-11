@@ -69,3 +69,26 @@ every change is a clarification of behaviour that all three green rounds already
 ## Status
 3/3 rounds green across two model tiers on v1/v2. Stellar target is done; next milestone is a
 second chain overlay, which will test whether `spec/` is truly chain-agnostic.
+
+## EVM round 1 — skill v3 + mechanics-only EVM overlay — builds, 206 tests, 22 decisions
+
+`out_dir=/home/user/df-gen/evm-1`. Purpose: surface every platform-dependent question. Full
+log in `evm-round1-DECISIONS.md`. Headline answers the agent had to invent (and Chainlink's
+real EVM cache for comparison):
+
+| Axis | Agent chose | Chainlink EVM |
+|---|---|---|
+| Account model | keep `sender` arg, require `msg.sender == sender` | drop arg, use `msg.sender` |
+| History/expiry | window mask emulated, nothing reclaimed | unbounded mappings |
+| Upgrade | delegatecall self-forwarding emulation | immutable, migrate via proxy swap |
+| Errors | `CacheError(uint32 code)` typed errors | named custom errors |
+| Optionals | `{present, value}` structs | n/a |
+| Naming | snake_case verbatim | camelCase |
+| Ownership | implemented spec table + 2200 code | ConfirmedOwner (no expiry) |
+
+Outcome → skill v4: `spec/06-platform-model.md` gives a rule per axis (A account/auth,
+B storage, C expiry/history, D tx/compute/size limits, E errors, F serialisation,
+G optionals, H events, I upgradeability, J ownership/time, K naming/widths, L cross-contract);
+the EVM overlay becomes an instantiation of those rules. Notable rulings: caller-identity
+chains drop the `sender` argument; the retention window is behaviour on every chain; no
+upgrade emulation on chains without native code replacement.
