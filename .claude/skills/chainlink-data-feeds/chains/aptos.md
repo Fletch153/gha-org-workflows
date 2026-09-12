@@ -164,7 +164,7 @@ Instantiation of `spec/06` for Aptos. Mechanics only; behaviour is in `spec/`.
 | `List<T>` | `vector<T>` |
 | `Bytes` | `vector<u8>` |
 | `Address` | `address` |
-| records | `struct ... has copy, drop, store` with spec field names in spec order (BCS order and view-JSON names are ABI); fields are read from other modules through accessor functions `<struct_snake>_<field>` (`round_data_round_id/answer/timestamp/ledger_seq/primary`, `workflow_permission_allowed_sender/allowed_workflow_owner/allowed_workflow_name`, `feed_config_description/workflow_permissions`, Proxy `round_round_id/answer/timestamp`) and built with `new_<struct_snake>(...)` constructors (`new_workflow_permission`, `new_feed_config`, `new_feed_config_entry`, `new_report_entry`) |
+| records | `struct ... has copy, drop, store` with spec field names in spec order (BCS order and view-JSON names are ABI); fields are read from other modules through accessor functions `<struct_snake>_<field>` (`round_data_round_id/answer/timestamp/ledger_seq/primary`, `workflow_permission_allowed_sender/allowed_workflow_owner/allowed_workflow_name`, `feed_config_description/workflow_permissions`, Proxy `round_round_id/answer/timestamp`, and for the batch-element records `feed_config_entry_data_id/config`, `report_entry_data_id/answer/timestamp`) and built with `new_<struct_snake>(...)` constructors (`new_workflow_permission`, `new_feed_config`, `new_feed_config_entry`, `new_report_entry`) |
 | `Bound` | `u8` (`0` / `1`) |
 | events | `#[event]` structs |
 
@@ -189,7 +189,11 @@ Byte-width checks (`spec/06` D.2 analogue, host errors): `set_feed_configs` chec
 entry's `data_id` (32) and each permission's owner (20) / name (10) at the point the entry
 is validated — after the `UnauthorizedCaller` (101) and empty-batch (103) checks, before
 that entry's spec checks; `set_min_decimals` checks `data_id` (32) after owner auth and
-before `InvalidDecimals`. Lookup-only arguments are not checked (a mis-sized id is simply an
+before `InvalidDecimals`. Within one entry, *all* of its width checks (the `data_id`, then every permission's
+owner and name in order) run before *any* of that entry's spec checks, so a mis-sized owner in
+a later permission aborts with `host_error::invalid_argument()` even when an earlier permission
+would fail a spec check; entries are still validated in order, so a spec error in entry 1
+precedes a width error in entry 2. Lookup-only arguments are not checked (a mis-sized id is simply an
 unknown feed). The report decoder does not check id widths.
 
 ## Testing notes
@@ -205,14 +209,18 @@ unknown feed). The report decoder does not check id widths.
   `event::was_event_emitted(&e)` and count `event::emitted_events<T>()` for "only"
   conditions.
 - Mock Cache for Proxy unit tests: the Cache module's `#[test_only]` injectors
-  `test_inject_round`, `test_set_frozen`, `test_expire_round` (direct table writes, no
+  `test_inject_round`, `test_set_latest` (sets `FeedState.latest_round` without touching the
+  round table), `test_new_round_data`, `test_set_frozen` (creates a zero-tip state if absent),
+  `test_expire_round`, and per-type `test_event_counts` for event deltas (direct table writes, no
   business logic), plus `test_window`, `test_permission_hash`, `test_error_codes`,
   `test_data_retention_ttl`; Proxy `test_has_min_decimals`, `test_error_codes`. A Cache error
   propagating through the Proxy is exercised with a Proxy whose `cache` address holds no
   instance (`host_error::no_instance()` from `data_feeds::cache`); production readers carry
   no forced-error hook.
-- Token for `recover_tokens`: `primary_fungible_store::init_test_metadata_with_primary_store_enabled`
-  on `object::create_named_object(creator, seed)`, then `primary_fungible_store::mint`.
+- Token for `recover_tokens`: `primary_fungible_store::create_primary_store_enabled_fungible_asset`
+  with unlimited supply on a named object (the framework's `init_test_metadata_with_primary_store_enabled`
+  caps supply at 100, below what the corpus mints), then `primary_fungible_store::mint`;
+  balances via `primary_fungible_store::balance`.
 - Upgrade: I.2 — resurrection / cache-swap conditions run without an upgrade step; the
   "no `upgrade` entry point" assertion is a compile-time fact (a call would not resolve) and
   is recorded by a named test with a comment.

@@ -112,3 +112,28 @@ Multi-step scenarios execute in order against one fresh environment. Steps after
   `raw_metadata`/`raw_report` replace the encoded form verbatim.
 - `expire_round` carries `on`.
 - **Value matching** in `expect.value`: an object asserts only the fields it lists (partial match); a list asserts length and each element positionally; `null` asserts absence/None; `"_"` matches anything at that position; `"some"` matches any non-null value. Addresses are actor names or contract names (`cache`, `cache2`, `proxy`). Answers are decimal strings. `bound` is `AtOrBefore`|`AtOrAfter`. Permissions in values/events/entries are `{sender, owner, name}` (the spec's `allowed_sender`, `allowed_workflow_owner`, `allowed_workflow_name`).
+
+## Harness portability rules
+
+- **Harnesses that cannot continue after a failure** (an abort ends the test): run every
+  non-failing step first, then the failing `call` as the terminal statement under the
+  harness's expected-failure attribute. This is sound only because no scenario has a
+  state-changing step after a failing call. A scenario with *k* failing calls becomes one test
+  named `<id>` (first failing call) plus companion tests `<id>__alt2` … `<id>__altk`, each
+  ending in the next failing call; the coverage grader counts the `<id>` test.
+- **`fail_with` on statically-linked platforms** (`06` L.2, the mock is the real Cache module):
+  the scenario's asserted property is "a Cache failure surfaces through the Proxy with the
+  Cache's own code and origin, untranslated". Realise it by routing the Proxy at an address
+  with no Cache instance and asserting the Cache's host failure propagates; record this
+  substitution in the decision log.
+- **`expect_events.ordered`** where the harness cannot observe cross-type order: assert all
+  listed events were emitted by the call and keep the emission order in the code; note it.
+- **Events that accumulate over a test** (no per-call log): snapshot per-type counts before
+  the call and assert the delta for `only`/`count`.
+- **`advance {to: n}`** with `n` equal to the current sequence is a no-op; a lower `n` is a
+  scenario error.
+- **Mock Cache scope**: "answers for any id" may be realised only for the ids the corpus
+  actually uses (all mock scenarios use `id:1`); `frozen` without rounds may need a test-only
+  state record with a zero tip.
+- **`expect_error_codes.ownership_range`** is `[2100, 2299]` and covers both the owner codes
+  (2100–2102) and the pending-transfer codes (2200–2203).
