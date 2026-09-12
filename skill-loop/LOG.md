@@ -254,3 +254,13 @@ behaviour entry written back into `chains/aptos.md`. Reported holes → v13 (spe
 portability rules: multi-failure scenarios on abort-only harnesses, `fail_with` on
 statically-linked mocks, cross-type event order, accumulating events; corpus
 `ownership_range` 2100–2299; Aptos token fixture + injector notes).
+
+## Solana round 4 — skill v12 — builds, 174 tests, coverage 145/145, retention 38_880_000 ✅
+
+`out_dir=/home/user/df-gen/solana-4`. Isolation clean. Coverage grader 145/145 applicable
+(34 inapplicable with rules). Scenario tests generated mechanically by a checked-in
+`tools/gen_tests.py` from the corpus. 4 ABI + 8 behaviour entries written back into
+`chains/solana.md` (type vocabulary + behaviour details; committed here). Mutation score:
+pending. Reported holes → v14: spec/07 dropped-argument / `lo,hi` / token-account
+conventions; spec/06 B.6 (pre-existing record at a create address) and C.4 (reclaim error
+lives in the Cache enum).

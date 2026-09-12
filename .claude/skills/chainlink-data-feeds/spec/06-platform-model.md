@@ -55,6 +55,9 @@ Rule:
 5. Who pays for storage: where writes require an explicit payer (rent, account creation),
    the payer is the transaction's fee payer / the authorised caller of that entry point; the
    contract never fronts storage costs.
+6. A record that must be *created* by an entry point (a new `Round` at `tip + 1`) but already
+   exists at its address is an inconsistent state; fail with the platform's native
+   "already initialised" error, never a spec code.
 
 Overlay states: the unit per record, the presence mechanism, the payer.
 
@@ -79,7 +82,8 @@ Rule:
 4. Platforms with **rent-exempt persistent accounts** (Solana): as 3, and the overlay may
    add a permissionless *reclaim* of a round that is no longer readable (returning rent to
    its payer). Reclaim must not affect any readable round or the tip; if the overlay does not
-   define it, it does not exist.
+   define it, it does not exist. Its refusal code (`RoundStillReadable = 111`) is a variant of
+   the Cache's own error type.
 5. `ledger_seq` is the platform's monotonically increasing sequence, stored at the spec's
    width (u32) by truncating cast, no extra validation. Choose it in this order: the chain
    height (ledger, block, slot, version) if contract code can read it **and** the platform's

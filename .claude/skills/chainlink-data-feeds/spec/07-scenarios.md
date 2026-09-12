@@ -137,3 +137,12 @@ Multi-step scenarios execute in order against one fresh environment. Steps after
   state record with a zero tip.
 - **`expect_error_codes.ownership_range`** is `[2100, 2299]` and covers both the owner codes
   (2100–2102) and the pending-transfer codes (2200–2203).
+- **Dropped arguments** (`06` A.2): the corpus still carries `sender`/`admin` in `args`; on
+  caller-identity platforms the harness ignores them and uses `as`.
+- **`find_round` without `lo`/`hi`** on declared-record platforms: supply `1..=tip`.
+  `round_range` accounts: `max(from,1)..=min(to,tip)`.
+- **`recover_tokens` on token-account platforms**: `to: <actor>` resolves to a token account
+  of that actor created by the harness; `mint {to: "cache"}` credits a token account owned by
+  the contract's authority; `expect_balance` reads the actor's token account.
+- **Native failures beyond `host_fail`**: a harness may add `{"host_error": <name>}` for
+  platform-specific variants; the corpus itself never needs it.
