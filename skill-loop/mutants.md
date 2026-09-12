@@ -27,3 +27,4 @@ source between mutants. Report: caught / not caught per mutant, with the failing
 
 Score = mutants caught / mutants applicable (M11 needs a window-observing scenario; on
 non-expiry chains it is caught by the retention mask scenarios).
+| M17 | `set_feed_configs`: on overwrite of an existing config, do not refresh the `FeedConfig` entry's lifetime (`expiry` chains only; n/a elsewhere) | `cache.set_feed_configs.extends_contract_config_and_permission_ttls` |

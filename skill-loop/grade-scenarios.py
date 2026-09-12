@@ -19,11 +19,11 @@ norm = lambda s: re.sub(r'[^a-z0-9]', '', s.lower())
 text = open(log, errors='replace').read()
 # passing test names per framework
 passed = []
-for pat in (r'^test (\S+) \.\.\. ok', r'\[PASS\]\s+(\S+?)\(', r'\[ PASS\s*\]\s+(\S+)'):
+for pat in (r'^test (\S+?)(?: - should panic)? \.\.\. ok', r'\[PASS\]\s+(\S+?)\(', r'\[ PASS\s*\]\s+(\S+)'):
     for mm in re.finditer(pat, text, re.M):
         passed.append(norm(mm.group(1)))
 failed = set()
-for pat in (r'^test (\S+) \.\.\. FAILED', r'\[FAIL[^\]]*\]\s+(\S+?)\(', r'\[ FAIL\s*\]\s+(\S+)'):
+for pat in (r'^test (\S+?)(?: - should panic)? \.\.\. FAILED', r'\[FAIL[^\]]*\]\s+(\S+?)\(', r'\[ FAIL\s*\]\s+(\S+)'):
     for mm in re.finditer(pat, text, re.M):
         failed.add(norm(mm.group(1)))
 applicable = [s for s in corpus if set(s['requires']) <= caps]
