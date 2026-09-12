@@ -47,8 +47,10 @@ rule for it.
    then the Proxy (`spec/03`).
 4. Write the tests. The primary source is `spec/scenarios.json` (schema in
    `spec/07-scenarios.md`): implement **one test per scenario whose `requires` tags are all
-   in the overlay's `capabilities`**, named by the scenario `id`, asserting exactly what the
-   scenario asserts. List every inapplicable scenario in the decision log under
+   in the overlay's `capabilities`**, named by the full scenario `id` including its `cache.`/
+   `proxy.` prefix (dots → underscores, case-converted only if the platform requires),
+   asserting exactly what the scenario asserts — every step, every expected value, event
+   field and count; never a weaker paraphrase. List every inapplicable scenario in the decision log under
    `[TEST-TECHNIQUE]` with the `spec/06` rule. Then check `spec/05-tests.md` (the human
    summary) for conditions the scenarios do not cover on this platform and add tests for them.
 5. Verify, and fix until all hold:

@@ -55,8 +55,8 @@ search) that the entry points call. Keep entry points thin.
   script refuses to run without the Stellar CLI. Without the CLI, export
   `SOROBAN_SDK_BUILD_SYSTEM_SUPPORTS_SPEC_SHAKING_V2=1` for the wasm build.
 - Upgrade tests need wasm fixtures: (1) a distinct small contract exposing something the real
-  contract lacks (e.g. a `peek` function that reads the instance slot the mock writes) to
-  prove the swap; (2) a self-build of each contract. Build them with the command above and
+  contract lacks (a `peek` function that reads an instance-storage slot both real contracts
+  write in their constructor, e.g. the ownership library's owner slot) to prove the swap; (2) a self-build of each contract. Build them with the command above and
   check them in under each crate's `test_fixtures/`, loaded via `include_bytes!`. The
   self-upgrade fixture must be rebuilt whenever the contract changes.
 
