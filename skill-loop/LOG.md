@@ -244,3 +244,13 @@ Two independent checks now apply on every chain:
   each by the predicted scenario family (baseline 182 pass, 0 fail).
 A chain is graded PASS when: artifact builds; own tests pass; scenario coverage = all
 applicable; mutation score = 16/16 (or n/a mutants explained).
+
+## Aptos round 3 — skill v12 — builds, 225 tests, coverage 145/145, mutants 16/16 — PASS (grader v2)
+
+`out_dir=/home/user/df-gen/aptos-3`. Isolation clean. `DATA_RETENTION_TTL = 15_552_000`.
+Coverage grader: 145/145 applicable scenarios (34 inapplicable, each with its spec/06 rule).
+Mutation grader: 16/16 caught, every one by the predicted scenario family. 1 ABI + 1
+behaviour entry written back into `chains/aptos.md`. Reported holes → v13 (spec/07 harness
+portability rules: multi-failure scenarios on abort-only harnesses, `fail_with` on
+statically-linked mocks, cross-type event order, accumulating events; corpus
+`ownership_range` 2100–2299; Aptos token fixture + injector notes).

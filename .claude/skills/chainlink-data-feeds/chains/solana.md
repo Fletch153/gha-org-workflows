@@ -201,3 +201,69 @@ few or no entries; anything left is a gap to report.
 ## Retention constant
 
 Sequence unit nominal duration: 0.4-second slots → `DATA_RETENTION_TTL = 38_880_000` (180 days, `spec/04`).
+
+## Type vocabulary (written back by the solana-4 run)
+
+| Spec | Solana |
+|---|---|
+| `data_id`, `workflow_cid`, hashes (32 bytes) | `[u8; 32]` |
+| `workflow_owner` (20 bytes) | `[u8; 20]` |
+| `workflow_name` (10 bytes) | `[u8; 10]` |
+| `report_id` (2 bytes) | `[u8; 2]` (inside the raw 64-byte metadata only) |
+| `answer` (I256) | `[u8; 32]` little-endian two's complement (`ethnum::I256` in memory) |
+| `String` | Borsh `String` |
+| `List<T>` | Borsh `Vec<T>` |
+| `Bytes` (`metadata`, `report`) | Borsh `Vec<u8>` |
+| `Address` | `Pubkey` |
+| `Option<T>` | Borsh `Option<T>` |
+| `u32` / `u64` | native widths, unchanged |
+| records | Borsh structs with the spec field order (order is the wire ABI; names are not) |
+| `Bound` | Borsh enum, one tag byte = the spec discriminant (`AtOrBefore = 0`, `AtOrAfter = 1`); any other byte → `ProgramError::InvalidInstructionData` |
+| events | `sol_log_data` slices, see axis H |
+
+Instruction data: the Borsh enum tag is **one byte** (the variant index in the order listed
+above); each variant carries the spec arguments in spec order; `find_round`'s `lo`/`hi` come
+last (`data_id, timestamp, bound, lo, hi`). Reader return data (Borsh, no `Result` wrapper):
+`latest_round` → `Vec<Option<RoundData>>`, `get_round`/`find_round` → `Option<RoundData>`,
+`round_range` → `Vec<RoundData>`, `decimals` → `Vec<Option<u32>>`, `description` →
+`Vec<Option<String>>`, `is_configured`/`is_frozen` → `Vec<bool>`, `get_feed_permissions` →
+`Vec<WorkflowPermission>`, `has_permission`/`is_feed_admin` → `bool`, `version` → `u32`,
+`type_and_version` → `String`, `get_owner` → `Option<Pubkey>`; Proxy `latest_round`/`get_round`
+→ `Round { round_id: u64, answer: [u8; 32], timestamp: u64 }`, `decimals`/`get_min_decimals` →
+`u32`, `description` → `String`, `get_cache` → `Pubkey`. `RoundStillReadable = 111` is a variant
+of the `CacheError` enum; the ownership codes are two enums, `OwnableError` (2100–2102) and
+`OwnableTransferError` (2200–2203).
+
+## Behaviour details fixed by the solana-4 run
+
+- Presence at a derived address: owned by the program → the first byte must be the record's
+  discriminator (anything else, including empty data → `InvalidAccountData`); not owned by the
+  program → absent when it holds no data (with or without lamports), `InvalidAccountData` when
+  it holds data.
+- `on_report`: if the round account for `(data_id, tip + 1)` already carries a Round record the
+  call fails with `ProgramError::AccountAlreadyInitialized`.
+- Check interleaving inside batches: `set_feed_configs` runs the whole spec validation of the
+  entry data (103–108) before consuming any per-entry account, then per entry validates its
+  records (derivation, discriminator) and writes. `remove_feed_configs` per id: take + validate
+  `feed_config` → duplicate check (108) → presence (102) → take + validate its old permissions;
+  all ids are validated before anything is closed. `set_feed_frozen`: the duplicate check over
+  the whole list precedes consuming any `feed_state`; then per id derivation → presence (110)
+  → write + event. `on_report` per entry: derivation of `permission`, `feed_config`,
+  `feed_state` and the discriminator check of `feed_config` precede the permission lookup; the
+  `round` account is derivation-checked only when the entry appends.
+- `find_round` validates (derivation) every supplied round account in `[max(lo,1), min(hi,tip)]`
+  before the binary search; the tip's account is validated, never read.
+- Ownership: `live_until_ledger == now` is accepted (`< now` → 2201); no maximum offer horizon;
+  `renounce_ownership` discards an expired offer; events carry the arguments as passed (a cancel
+  emits `ownership_transfer { old_owner, new_owner, 0 }`).
+- `set_cache` stores the new address, then emits `CacheSet` (spec/06 H.2).
+- Fixed-size records (`FeedState`, `MinDecimals`, config) are overwritten in place with zero
+  padding; only `FeedConfig` is resized.
+- `recover_tokens` order: owner gating (2100 / `MissingRequiredSignature`) → `token_program`
+  is SPL Token (`IncorrectProgramId`) → `destination == to` (`InvalidArgument`) → `source` is
+  owned by SPL Token, unpacks as a token account, `mint == token`, `owner == config PDA`
+  (`InvalidArgument`) → CPI signed by the config PDA → `TokenRecovered`. SPL Token's own
+  failures (e.g. `Custom(1)` insufficient funds) propagate unchanged.
+- Test-harness facts worth keeping: the SPL Memo program bundled with program-test makes a
+  cheap per-transaction nonce; after a loader deployment use only single-slot warps
+  (program-test's program cache panics on a multi-slot warp right after a deployment).
