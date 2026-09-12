@@ -127,8 +127,9 @@ and refresh the instance lifetime. Any error aborts the whole call with no write
    all-zero → `InvalidAddress`; name all-zero → `InvalidWorkflowName`; equal to any later
    permission in the same entry → `DuplicatePermission`.
 4. for each entry in order: `existed` = config present. If existed, delete every `Permission`
-   of the old config. Write `FeedConfig`, write one `Permission` per new permission, refresh
-   their lifetimes. If `existed` emit `FeedConfigRemoved { data_id }`; then always emit
+   of the old config. Write `FeedConfig`, write one `Permission` per new permission, then
+   refresh the lifetimes of **both** the `FeedConfig` entry (also when it was overwritten) and
+   every new `Permission` entry. If `existed` emit `FeedConfigRemoved { data_id }`; then always emit
    `FeedConfigSet { data_id, decimals: DECIMALS, description, workflow_permissions }` (the full
    list). Never touch `FeedState` or rounds: reconfiguring a feed keeps its history and counter,
    and a re-added feed's first report is judged stale against the surviving tip timestamp.

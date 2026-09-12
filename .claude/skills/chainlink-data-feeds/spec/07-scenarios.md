@@ -66,7 +66,8 @@ authorisation" and is only meaningful on `per_arg_auth` platforms.
 | `upgrade_self` | `on` | requires `in_contract_upgrade`: replace code with a fresh self-build |
 | `upgrade_to_peek` | `on` | requires `in_contract_upgrade`: replace with a distinct artifact exposing `peek()` and expect `peek()` to answer |
 
-Multi-step scenarios execute in order against one fresh environment. Steps after a failing
+Multi-step scenarios execute in order against one fresh environment; every step of the
+scenario is executed — never drop a setup step even when the assertion would pass without it. Steps after a failing
 `call` are still executed (the failure is expected and asserted).
 
 ## Scenario object

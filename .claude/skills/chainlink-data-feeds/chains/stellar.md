@@ -21,7 +21,7 @@
   (for constructors) and `enforce_owner_auth` (owner-only gating). Use it; do not re-implement.
 - All contract crates are `#![no_std]`.
 
-## Workspace layout (normative)
+## Layout and commands
 
 A Cargo workspace (resolver 2) at `out_dir` with three members:
 
@@ -65,7 +65,7 @@ search) that the entry points call. Keep entry points thin.
   check them in under each crate's `test_fixtures/`, loaded via `include_bytes!`. The
   self-upgrade fixture must be rebuilt whenever the contract changes.
 
-## Type and encoding mapping
+## Type vocabulary
 
 | Spec | Soroban |
 |---|---|
@@ -179,6 +179,12 @@ Upgrade: `env.deployer().update_current_contract_wasm(new_wasm_hash)`. Token rec
   test-only double that doesn't otherwise need TTL semantics (e.g. the Proxy's mock-Cache) should
   either store its state in the persistent tier (which the test host auto-restores when "expired")
   or explicitly re-pin its temporary entries to the network maximum on every write.
+
+## Decision log
+
+Same format as `SKILL.md` step 6. With this overlay and `spec/06` applied there should be
+no `[ABI]` or `[BEHAVIOUR]` entries; any that remain are written back into this overlay by
+the run that produced them (SKILL.md step 7).
 
 ## Retention constant
 

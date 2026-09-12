@@ -92,7 +92,7 @@ Instantiation of `spec/06` for Solana. Mechanics only; behaviour is in `spec/`.
 Every reader in the spec is an instruction with no signer requirement; its result is Borsh
 in return data. Proxy readers CPI the Cache and then set their own return data.
 
-## Instruction encoding and account conventions (part of the ABI)
+## Layout and commands: instruction encoding and account conventions (part of the ABI)
 
 Instruction data is a Borsh enum; tags are the variant indices in this order — Cache:
 `initialize`, `on_report`, `set_feed_configs`, `remove_feed_configs`, `set_feed_frozen`,
