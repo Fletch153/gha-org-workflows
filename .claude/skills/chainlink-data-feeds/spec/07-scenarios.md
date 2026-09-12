@@ -146,3 +146,8 @@ Multi-step scenarios execute in order against one fresh environment. Steps after
   the contract's authority; `expect_balance` reads the actor's token account.
 - **Native failures beyond `host_fail`**: a harness may add `{"host_error": <name>}` for
   platform-specific variants; the corpus itself never needs it.
+- **`advance {"by_retention": true, "plus": n}`** — set the sequence to (the `ledger_seq` of
+  the most recently written round) + `DATA_RETENTION_TTL` + `n`, using the overlay's own
+  retention number (`04`); `n` may be negative. Two universal `cache.retention.*` scenarios
+  use it so the window mask is observed through the public interface on every chain,
+  including those where the TTL cannot vary.

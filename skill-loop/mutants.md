@@ -18,7 +18,7 @@ source between mutants. Report: caught / not caught per mutant, with the failing
 | M8 | `set_feed_frozen`: silently skip ids without state instead of failing with 110 | `cache.set_feed_frozen.a_feed_without_state_aborts_the_whole_batch` |
 | M9 | `round_range`: exclusive upper bound (`to` not included) | `cache.round_range.bounded_range_inclusive` |
 | M10 | `find_round`: `AtOrBefore` returns the oldest qualifying round instead of the newest | `cache.find_round.at_or_before_picks_newest` |
-| M11 | window: `width_at(now)` always returns `grow_to_ttl` (ignore `grow_at_ledger`) | window/retention scenarios (`expired_rounds_drop_out*`, `window_grows_at_grow_at_ledger` where applicable) |
+| M11 | window: `width_at(now)` returns `grow_to_ttl + 2` (widens the mask; ignore `grow_at_ledger`) | `cache.retention.non_tip_rounds_outside_the_window_are_masked_on_every_read` (universal), plus `window_grows_at_grow_at_ledger` where the TTL can vary |
 | M12 | Proxy: skip the frozen check | `proxy.*.rejects_a_frozen_feed` |
 | M13 | Proxy: `RoundsToZero` check removed (return 0) | `proxy.precision.non_zero_answer_scaling_to_zero_fails` |
 | M14 | Proxy: `set_min_decimals` accepts `min > 18` | `proxy.set_min_decimals.min_above_cache_precision_is_rejected` |

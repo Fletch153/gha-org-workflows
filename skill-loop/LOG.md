@@ -264,3 +264,19 @@ statically-linked mocks, cross-type event order, accumulating events; corpus
 pending. Reported holes → v14: spec/07 dropped-argument / `lo,hi` / token-account
 conventions; spec/06 B.6 (pre-existing record at a create address) and C.4 (reclaim error
 lives in the Cache enum).
+
+## Solana round 4 — mutation grader: 16/16 caught (grader v2 PASS)
+Caveats recorded by the grader: M7 partly an interface-shape catch on Solana (a program
+cannot close an undeclared account); M11 caught only by the window helper's unit tests —
+no corpus scenario observed the retention mask through the public interface on a
+non-expiry chain. → v15: two universal `cache.retention.*` scenarios with a new
+`advance {by_retention}` step (181 scenarios); M11 redefined so the universal scenario
+catches it.
+
+## Grader v2 results
+| Chain | Coverage | Mutants | Reference |
+|---|---|---|---|
+| Stellar r4 | 178/179 (1 renamed id) | 16/16 | 179/179 |
+| Aptos r3 | 145/145 | 16/16 | — |
+| Solana r4 | 145/145 | 16/16 | — |
+| EVM r5 | pre-corpus build; not graded | — | — |

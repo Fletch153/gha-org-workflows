@@ -7,7 +7,8 @@
   "ACTORS: `owner` is the constructor owner everywhere. Every reference `add_admin()`/`new_address()` is bound to `admin`/`admin2`, `sender`/`sender2`, `stranger` (any address that must not be recognised: non-admin caller, unknown sender, attacker), `new_owner`, and `payer` (the token-recovery destination). `as` is always given for mutators; it is the address that must authorise on per_arg_auth platforms and the transaction signer elsewhere. `\"as\":\"unauthorised\"` appears once (cache.on_report.sender_without_auth_host_fails, requires per_arg_auth).",
   "EVENTS: Soroban's `events().all()` holds only the last invocation's events, so every `expect_events` refers to the immediately preceding `call`. `only: true` = exactly the listed events; `count: n` = the call emitted n events. Where the reference used `assert_latest_event` on a call that emits exactly one event it is written as `only: true`; where it only counted events the names are still listed (`FeedUpdated` x2) because the assertion message names them.",
   "DEVIATIONS: (a) The three set_feed_configs resurrection scenarios (stale_feed_state_resurrects..., re_add_by_a_different_workflow..., re_add_first_report_is_rejected_stale...) omit the reference's incidental `set_network_max_ttl(1_000_000)`: no assertion in those tests depends on it (rounds are written at ledger 1000 and nothing rolls past their lifetime under any default), and keeping it would tag core resurrection behaviour with `network_max_variable` and make it inapplicable on chains that cannot vary the network maximum. The `roll(1_000)` is kept as `advance to 1000`. (b) Duplicate identical assertions in the reference (e.g. `is_frozen` asserted twice in a row) are written once. (c) Where the reference captured values before an upgrade and compared after, the corpus spells out the known values (the seed is deterministic), so the post-upgrade steps assert every field of every round explicitly. (d) `cache.on_report.i256_answer_beyond_i128_survives` drops the reference's `to_i128().is_none()` check; it is implied by the exact 2^255-1 answer.",
-  "UNTRANSLATED: none. All 117 cache and 62 proxy contract-level tests are present (117 + 62 = 179 scenarios)."
+  "UNTRANSLATED: none. All 117 cache and 62 proxy contract-level tests are present (117 + 62 = 179 scenarios).",
+  "ADDED (v15): `advance {\"by_retention\": true, \"plus\": n}` = set the sequence to (ledger_seq of the most recently written round) + DATA_RETENTION_TTL + n, using the overlay's own retention number; two universal `cache.retention.*` scenarios use it so the window mask is observed through the public interface on every chain."
  ],
  "constants": {
   "DECIMALS": 18,
@@ -15229,6 +15230,265 @@
      },
      "expect": {
       "error": 50
+     }
+    }
+   ]
+  },
+  {
+   "id": "cache.retention.non_tip_rounds_outside_the_window_are_masked_on_every_read",
+   "source": "(added) universal public-interface check of the retention mask; requires no TTL variation",
+   "requires": [],
+   "steps": [
+    {
+     "step": "deploy",
+     "what": "cache",
+     "owner": "owner"
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "add_feed_admin",
+     "as": "owner",
+     "args": {
+      "new_admin": "admin"
+     },
+     "expect": {
+      "ok": true
+     }
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "set_feed_configs",
+     "as": "admin",
+     "args": {
+      "admin": "admin",
+      "entries": [
+       {
+        "data_id": "id:1",
+        "description": "BTC/USD",
+        "permissions": [
+         {
+          "sender": "sender",
+          "owner": "owner:0x11",
+          "name": "name:0x22"
+         }
+        ]
+       }
+      ]
+     },
+     "expect": {
+      "ok": true
+     }
+    },
+    {
+     "step": "seed",
+     "on": "cache",
+     "data_id": "id:1",
+     "as": "sender",
+     "n": 3
+    },
+    {
+     "step": "advance",
+     "by_retention": true,
+     "plus": 1
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "latest_round",
+     "args": {
+      "data_ids": [
+       "id:1"
+      ]
+     },
+     "expect": {
+      "value": [
+       {
+        "round_id": 3,
+        "answer": "300",
+        "timestamp": 30
+       }
+      ]
+     }
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "get_round",
+     "args": {
+      "data_id": "id:1",
+      "round_id": 3
+     },
+     "expect": {
+      "value": {
+       "round_id": 3,
+       "answer": "300",
+       "timestamp": 30
+      }
+     }
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "get_round",
+     "args": {
+      "data_id": "id:1",
+      "round_id": 1
+     },
+     "expect": {
+      "value": null
+     }
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "get_round",
+     "args": {
+      "data_id": "id:1",
+      "round_id": 2
+     },
+     "expect": {
+      "value": null
+     }
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "round_range",
+     "args": {
+      "data_id": "id:1",
+      "from": 0,
+      "to": 18446744073709551615
+     },
+     "expect": {
+      "value": [
+       {
+        "round_id": 3,
+        "answer": "300",
+        "timestamp": 30
+       }
+      ]
+     }
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "find_round",
+     "args": {
+      "data_id": "id:1",
+      "timestamp": 25,
+      "bound": "AtOrBefore"
+     },
+     "expect": {
+      "value": null
+     }
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "find_round",
+     "args": {
+      "data_id": "id:1",
+      "timestamp": 25,
+      "bound": "AtOrAfter"
+     },
+     "expect": {
+      "value": {
+       "round_id": 3,
+       "answer": "300",
+       "timestamp": 30
+      }
+     }
+    }
+   ]
+  },
+  {
+   "id": "cache.retention.rounds_inside_the_window_stay_readable_just_before_it_closes",
+   "source": "(added) companion: one unit before the window closes, every round is still readable",
+   "requires": [],
+   "steps": [
+    {
+     "step": "deploy",
+     "what": "cache",
+     "owner": "owner"
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "add_feed_admin",
+     "as": "owner",
+     "args": {
+      "new_admin": "admin"
+     },
+     "expect": {
+      "ok": true
+     }
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "set_feed_configs",
+     "as": "admin",
+     "args": {
+      "admin": "admin",
+      "entries": [
+       {
+        "data_id": "id:1",
+        "description": "BTC/USD",
+        "permissions": [
+         {
+          "sender": "sender",
+          "owner": "owner:0x11",
+          "name": "name:0x22"
+         }
+        ]
+       }
+      ]
+     },
+     "expect": {
+      "ok": true
+     }
+    },
+    {
+     "step": "seed",
+     "on": "cache",
+     "data_id": "id:1",
+     "as": "sender",
+     "n": 3
+    },
+    {
+     "step": "advance",
+     "by_retention": true,
+     "plus": -1
+    },
+    {
+     "step": "call",
+     "on": "cache",
+     "fn": "round_range",
+     "args": {
+      "data_id": "id:1",
+      "from": 0,
+      "to": 18446744073709551615
+     },
+     "expect": {
+      "value": [
+       {
+        "round_id": 1,
+        "answer": "100",
+        "timestamp": 10
+       },
+       {
+        "round_id": 2,
+        "answer": "200",
+        "timestamp": 20
+       },
+       {
+        "round_id": 3,
+        "answer": "300",
+        "timestamp": 30
+       }
+      ]
      }
     }
    ]
