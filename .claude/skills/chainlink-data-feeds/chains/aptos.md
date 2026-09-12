@@ -240,3 +240,15 @@ the run that produced them (SKILL.md step 7).
 ## Retention constant
 
 Sequence unit nominal duration: 1-second timestamp ticks → `DATA_RETENTION_TTL = 15_552_000` (180 days, `spec/04`).
+
+## Write-back (Phase 1 run, `aptos-4`)
+
+- **B (storage, spec/06 B.6)** — a `Round` that must be created at `tip + 1` but already
+  exists in `rounds` fails with the table native's `ALREADY_EXISTS` abort (`0x6407` =
+  25607, location `aptos_std::table`) from `table::add`; never a spec code. Unreachable
+  through the public interface; a test forges the state with `test_inject_round`.
+- **L (cross-contract)** — `proxy::create` and `proxy::set_cache` store the `cache`
+  address without checking that a `Cache` instance exists there (the spec says "store
+  cache", nothing extra). A subsequent Proxy reader aborts with `host_error::no_instance()`
+  (`0x60001`) raised in `data_feeds::cache`; this is the realisation of the spec/07
+  `fail_with` substitution (route the Proxy at an address with no Cache instance).

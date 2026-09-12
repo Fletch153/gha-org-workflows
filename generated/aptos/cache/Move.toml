@@ -1,0 +1,15 @@
+[package]
+name = "DataFeedsCache"
+version = "1.0.0"
+upgrade_policy = "compatible"
+
+[addresses]
+data_feeds = "_"
+
+[dev-addresses]
+data_feeds = "0x1000"
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "aptos-cli-v7.6.0"
+subdir = "aptos-move/framework/aptos-framework"

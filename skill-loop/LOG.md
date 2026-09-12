@@ -280,3 +280,11 @@ catches it.
 | Aptos r3 | 145/145 | 16/16 | — |
 | Solana r4 | 145/145 | 16/16 | — |
 | EVM r5 | pre-corpus build; not graded | — | — |
+
+## Aptos round 4 — skill v15 — 209 tests, coverage 147/147, 0 ABI decisions — code committed to `generated/aptos/`
+
+`out_dir=/home/user/df-gen/aptos-4`. Isolation clean. `DATA_RETENTION_TTL = 15_552_000`.
+Found a corpus off-by-one in `cache.retention.rounds_inside_the_window_stay_readable_just_before_it_closes`
+(`plus: -1` → `-2`; fixed). Two behaviour entries written back (table `ALREADY_EXISTS` for
+B.6; Proxy does not validate its cache address). The generated packages (sources, scripts,
+tests, manifests, README, DECISIONS) are committed under `generated/aptos/` for review.

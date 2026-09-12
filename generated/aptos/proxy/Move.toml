@@ -1,0 +1,14 @@
+[package]
+name = "DataFeedsProxy"
+version = "1.0.0"
+upgrade_policy = "compatible"
+
+[addresses]
+data_feeds_proxy = "_"
+
+[dev-addresses]
+data_feeds_proxy = "0x2000"
+data_feeds = "0x1000"
+
+[dependencies]
+DataFeedsCache = { local = "../cache" }
