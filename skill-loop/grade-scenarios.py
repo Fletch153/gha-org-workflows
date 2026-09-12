@@ -18,10 +18,10 @@ caps = {c.strip() for c in m.group(1).split(',') if c.strip()} if m else set()
 norm = lambda s: re.sub(r'[^a-z0-9]', '', s.lower())
 text = open(log, errors='replace').read()
 # passing test names per framework
-passed = set()
+passed = []
 for pat in (r'^test (\S+) \.\.\. ok', r'\[PASS\]\s+(\S+?)\(', r'\[ PASS\s*\]\s+(\S+)'):
     for mm in re.finditer(pat, text, re.M):
-        passed.add(norm(mm.group(1)))
+        passed.append(norm(mm.group(1)))
 failed = set()
 for pat in (r'^test (\S+) \.\.\. FAILED', r'\[FAIL[^\]]*\]\s+(\S+?)\(', r'\[ FAIL\s*\]\s+(\S+)'):
     for mm in re.finditer(pat, text, re.M):
