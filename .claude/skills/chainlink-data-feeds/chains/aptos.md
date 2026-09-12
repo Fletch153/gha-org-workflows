@@ -80,7 +80,7 @@ Instantiation of `spec/06` for Aptos. Mechanics only; behaviour is in `spec/`.
   timestamp). The contract decodes it with its own strict decoder (Move has no generic BCS
   deserialiser for structs — `from_bcs::from_bytes` is friend-only): non-minimal ULEB128,
   a length above u32, truncation, or trailing bytes → `MalformedReport` (100). The decoder
-  does not check id widths (a mis-sized id decodes and is soft-skipped as an unknown feed).
+  rejects a `data_id` whose length is not 32 (`MalformedReport`, `06` F.2).
   Metadata is the raw 64-byte layout.
 - **G. Optionals** — `std::option::Option<T>`. `get_owner` returns `Option<address>`.
   Readers that never fail return the bare value (no `Result`).
@@ -149,7 +149,6 @@ Instantiation of `spec/06` for Aptos. Mechanics only; behaviour is in `spec/`.
   package → `build/DataFeedsCache/bytecode_modules/{cache,ownable,window,ledger,host_error}.mv`
   and `build/DataFeedsProxy/bytecode_modules/proxy.mv` (+ `package-metadata.bcs`). For a
   real deployment replace `--dev` with `--named-addresses data_feeds=<addr>[,data_feeds_proxy=<addr>]`.
-- Tests: `aptos move test --dev --skip-fetch-latest-git-deps` in each package.
 
 ## Type vocabulary
 
@@ -194,7 +193,8 @@ owner and name in order) run before *any* of that entry's spec checks, so a mis-
 a later permission aborts with `host_error::invalid_argument()` even when an earlier permission
 would fail a spec check; entries are still validated in order, so a spec error in entry 1
 precedes a width error in entry 2. Lookup-only arguments are not checked (a mis-sized id is simply an
-unknown feed). The report decoder does not check id widths.
+unknown feed). The report decoder rejects a `data_id` of any length other than 32 bytes with
+`MalformedReport` (whole report).
 
 ## Testing notes
 
@@ -241,7 +241,7 @@ the run that produced them (SKILL.md step 7).
 
 Sequence unit nominal duration: 1-second timestamp ticks → `DATA_RETENTION_TTL = 15_552_000` (180 days, `spec/04`).
 
-## Write-back (Phase 1 run, `aptos-4`)
+## Additional platform facts
 
 - **B (storage, spec/06 B.6)** — a `Round` that must be created at `tip + 1` but already
   exists in `rounds` fails with the table native's `ALREADY_EXISTS` abort (`0x6407` =

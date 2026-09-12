@@ -114,8 +114,9 @@ the Cache is consulted".
 ## Decision log
 
 Same format as `SKILL.md` step 6. With this overlay and `spec/06` applied there should be
-few or no entries; anything left is a gap to report.
+no `[ABI]` or `[BEHAVIOUR]` entries; any that remain are written back into this overlay by
+the run that produced them (SKILL.md step 7).
 
 ## Retention constant
 
-Sequence unit nominal duration: 12-second blocks (nominal; the overlay may state the target network's actual block time) → `DATA_RETENTION_TTL = 1_296_000` (180 days, `spec/04`).
+Sequence unit nominal duration: 12-second blocks (mainnet nominal; re-derive for networks with a different block time) → `DATA_RETENTION_TTL = 1_296_000` (180 days, `spec/04`).

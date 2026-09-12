@@ -61,8 +61,8 @@ carrying the Cache's error code (the Proxy does not translate it).
 
 ## Admin (owner only, host-authorised)
 
-`set_cache(cache: Address)` — refresh instance lifetime; emit `CacheSet { old_cache, new_cache: cache }`;
-store the new address. Round ids resolve against the new Cache from then on.
+`set_cache(cache: Address)` — refresh instance lifetime; store the new address; emit
+`CacheSet { old_cache, new_cache: cache }`. Round ids resolve against the new Cache from then on.
 
 `set_min_decimals(data_id, min: u32) -> Result<(), ProxyReadError>` — in order: owner auth;
 `min > DECIMALS` → `InvalidDecimals`; refresh instance lifetime; write

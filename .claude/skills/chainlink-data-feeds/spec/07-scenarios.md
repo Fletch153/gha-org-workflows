@@ -3,7 +3,7 @@
 `spec/scenarios.json` is the executable form of `05-tests.md`: every scenario is one test.
 It is written in the spec's own vocabulary (function names of `02`/`03`, error codes, event
 names and fields, actor roles), so each chain's implementation translates it into its native
-test framework mechanically — one test per scenario, named `<id>` (case-converted if the
+test framework mechanically — one test per scenario, named `<id>` (dots → underscores; case-converted if the
 platform requires). Grading is the pass rate over applicable scenarios.
 
 ## Applicability
@@ -63,7 +63,7 @@ authorisation" and is only meaningful on `per_arg_auth` platforms.
 | `expect_events` | `on`, `events: [ { "name", "fields": {…} } ]`, `only`?: true, `count`?: n | events emitted by the last `call`; `only` = exactly these and nothing else; fields omitted are not asserted |
 | `expect_state` | `on`, `present`/`absent`: record descriptor | presence of a record by spec key, e.g. `{ "record": "MinDecimals", "data_id": … }` |
 | `expect_ttl` | `on`, `record`, `key…`, `is: "max"|"unchanged"|n` | requires `expiry` |
-| `upgrade_self` | `on` | requires `in_contract_upgrade` or `external_upgrade`: replace code with a fresh self-build |
+| `upgrade_self` | `on` | requires `in_contract_upgrade`: replace code with a fresh self-build |
 | `upgrade_to_peek` | `on` | requires `in_contract_upgrade`: replace with a distinct artifact exposing `peek()` and expect `peek()` to answer |
 
 Multi-step scenarios execute in order against one fresh environment. Steps after a failing
@@ -72,7 +72,7 @@ Multi-step scenarios execute in order against one fresh environment. Steps after
 ## Scenario object
 
 ```
-{ "id": "cache.on_report.equal_or_older_timestamp_is_stale",
+{ "id": "cache.on_report.equal_or_older_timestamp_is_stale_and_emits_event",
   "source": "data-feeds-cache/src/tests/writer.rs::on_report::equal_or_older_timestamp_is_stale_and_emits_event",
   "requires": [],
   "steps": [ … ] }
@@ -148,6 +148,7 @@ Multi-step scenarios execute in order against one fresh environment. Steps after
   platform-specific variants; the corpus itself never needs it.
 - **`advance {"by_retention": true, "plus": n}`** — set the sequence to (the `ledger_seq` of
   the most recently written round) + `DATA_RETENTION_TTL` + `n`, using the overlay's own
-  retention number (`04`); `n` may be negative. Two universal `cache.retention.*` scenarios
+  retention number (`04`), assuming the network maximum in force is ≥ `DATA_RETENTION_TTL`
+  (on expiry chains run these under the default maximum); `n` may be negative. Two universal `cache.retention.*` scenarios
   use it so the window mask is observed through the public interface on every chain,
   including those where the TTL cannot vary.

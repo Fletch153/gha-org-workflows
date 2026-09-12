@@ -288,3 +288,20 @@ Found a corpus off-by-one in `cache.retention.rounds_inside_the_window_stay_read
 (`plus: -1` → `-2`; fixed). Two behaviour entries written back (table `ALREADY_EXISTS` for
 B.6; Proxy does not validate its cache address). The generated packages (sources, scripts,
 tests, manifests, README, DECISIONS) are committed under `generated/aptos/` for review.
+
+## Review pass (contracts + skill) — skill v16
+
+Contract review of `generated/aptos` against spec/02–04 and the Stellar reference: check
+orders, batch semantics, window arithmetic, binary search, ownership table, precision
+scaling and event shapes all match. One behaviour divergence found and fixed: the report
+decoder accepted a `data_id` of any length (soft-skipped as unknown feed) where the reference
+rejects the whole report; now `MalformedReport` (spec/06 F.2 wording tightened, Aptos overlay
+corrected, generated decoder + its test updated; 149/60 tests pass).
+Skill consistency sweep (independent reviewer): fixed 8 cross-file contradictions (set_cache
+emit order, Solana re-initialize code, constructor argument order, host-check ordering,
+`upgrade_self` tag, spec/05 wording, Stellar retention-test note, naming rule), 9 stale-text
+items (run-named headings, duplicate lines, counts, example id, old decision-log paragraphs),
+5 ambiguities (admin reads unwrapped, presence-before-auth order, `by_retention` assumption,
+M.3 order, Proxy `FeedFrozen` mechanism asked by the template), and template gaps (axis M,
+retention constant, testing-notes prompts). Added a spec/05 condition for `reclaim_round`.
+No scenario value errors found (retention, window, precision, ownership arithmetic verified).

@@ -4,6 +4,11 @@
 ## Platform facts (per `spec/06` axis)
 
 - **capabilities:** `[per_arg_auth, expiry, network_max_variable, in_contract_upgrade, events_indexed]`
+- **A** case A.1 (`require_auth`); **B** key-value entries with tiers; **C** case C.2; **D** per-transaction
+  resource limits only, no declaration convention; **E** `#[contracterror]` enums; **F** XDR;
+  **G** native `Option`, readers return `Result` as in `02`; **H** topics; **I** case I.1;
+  **J** `stellar-access` `ownable`; **K** spec spelling, `i128` token amounts, `BytesN<20>` owner;
+  **L** generated client. Details follow.
 
 ## Toolchain and dependencies
 
@@ -136,7 +141,9 @@ Upgrade: `env.deployer().update_current_contract_wasm(new_wasm_hash)`. Token rec
   maximum with `env.ledger().set_max_entry_ttl(n)` (testutils `Ledger` trait). Retention-window
   tests must keep the ledger inside the instance/persistent lifetimes (the test host
   auto-restores expired persistent/instance entries and treats expired temporary entries as
-  absent) — lower `max_entry_ttl` to a few hundred ledgers rather than rolling thousands ahead,
+  absent) — lower `max_entry_ttl` to a few hundred ledgers rather than rolling thousands ahead
+  (except the two `cache.retention.*` scenarios, which run under the default maximum and roll
+  `DATA_RETENTION_TTL` ahead),
   and lower `min_persistent_entry_ttl` (default 4096) below it, otherwise first-write pinning
   cannot be observed; read an entry's
   TTL inside `env.as_contract(&id, || env.storage().persistent().get_ttl(&key))` (testutils
@@ -159,8 +166,7 @@ Upgrade: `env.deployer().update_current_contract_wasm(new_wasm_hash)`. Token rec
   `#[contracttype]` line. This only affects nested struct *fields*; `Option<S>` as a function
   argument or return type (e.g. the Cache reader's `Vec<Option<RoundData>>`) is unaffected. Model
   a test-only "0 or 1 present" field as `Vec<S>` (or a `bool` + a dummy `S`) instead of `Option<S>`
-  — this bit the Proxy's mock-Cache double (`MockState.latest: Option<MockRound>`,
-  `fail_with: Option<u32>`).
+  — this bites test-only doubles with optional record fields.
 - `std::panic::set_hook` is a process-global resource; `cargo test`'s default thread pool runs
   `#[test]` functions concurrently, so a helper that swaps the hook to capture a panic message
   (for host-auth-failure / library-error assertions where the payload isn't a plain

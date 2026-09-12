@@ -65,7 +65,8 @@ Instantiation of `spec/06` for Solana. Mechanics only; behaviour is in `spec/`.
   from, to)` uses supplied rounds for `[from, to]`; `find_round(data_id, timestamp, bound,
   lo, hi)` searches `[lo, hi]`.
 - **E. Errors** — `ProgramError::Custom(code)` with the spec codes; names as an enum.
-  `initialize` on an existing config → `OwnerAlreadySet` (2102); any other instruction whose
+  `initialize` on an existing config → `ProgramError::AccountAlreadyInitialized` (`06` B.6;
+  `OwnerAlreadySet` 2102 is defined but unreachable); any other instruction whose
   config account does not exist → `ProgramError::UninitializedAccount`.
 - **F. Serialisation** — Borsh for `encode(x)` (`Pubkey` = 32 bytes, `[u8;20]`, `[u8;10]`)
   and for the report body (`Vec<ReportEntry>`, `try_from_slice` — trailing bytes are a
@@ -196,13 +197,14 @@ the `target_os = "solana"` cfg, and disable debug info in test profiles (disk).
 ## Decision log
 
 Same format as `SKILL.md` step 6. With this overlay and `spec/06` applied there should be
-few or no entries; anything left is a gap to report.
+no `[ABI]` or `[BEHAVIOUR]` entries; any that remain are written back into this overlay by
+the run that produced them (SKILL.md step 7).
 
 ## Retention constant
 
 Sequence unit nominal duration: 0.4-second slots → `DATA_RETENTION_TTL = 38_880_000` (180 days, `spec/04`).
 
-## Type vocabulary (written back by the solana-4 run)
+## Type vocabulary
 
 | Spec | Solana |
 |---|---|
@@ -234,7 +236,7 @@ last (`data_id, timestamp, bound, lo, hi`). Reader return data (Borsh, no `Resul
 of the `CacheError` enum; the ownership codes are two enums, `OwnableError` (2100–2102) and
 `OwnableTransferError` (2200–2203).
 
-## Behaviour details fixed by the solana-4 run
+## Behaviour details
 
 - Presence at a derived address: owned by the program → the first byte must be the record's
   discriminator (anything else, including empty data → `InvalidAccountData`); not owned by the

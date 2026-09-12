@@ -106,11 +106,12 @@ Rule:
    up front, with a dedicated "record not supplied" error type outside all numeric ranges).
 2. Where the caller must declare touched records in advance (Solana accounts), the overlay
    defines the declaration convention (ordering, derivation) and the entry point validates
-   every supplied record against its expected derivation before use. On every platform,
-   host-level checks — instance/config presence, signatures, record derivation and ownership,
-   argument widths, enum discriminants — come first, right after authorisation and loading
-   the contract's own state, and precede the spec's contract-level validations; batch entry
-   points validate each item's records at the point the item is consumed. An invalid enum
+   every supplied record against its expected derivation before use. On every platform the
+   order is: instance/config presence → signatures/authorisation → the remaining call-level
+   host checks (argument widths, enum discriminants) → the spec's contract-level
+   validations. Per-item host checks (record derivation and the widths inside a batch item)
+   run when that item is validated, before that item's spec checks; earlier items' spec
+   checks may therefore precede a later item's host failure. An invalid enum
    discriminant or mis-sized fixed-width argument is a host failure, never a spec code. A
    reclaim instruction (C.4) emits no event.
 3. Code size limits (e.g. 24 KiB EVM) are met by internal module/library splitting, never by
@@ -152,7 +153,8 @@ Rule:
 1. `encode(x)` in the permission hash is the platform's canonical typed serialisation of the
    value (XDR, ABI encoding, Borsh). Concatenate the three encodings and hash with keccak256.
 2. The report body is the canonical serialisation of `List<ReportEntry>` and must decode
-   **exactly**: undecodable, truncated, non-canonical or trailing bytes are a decode failure.
+   **exactly**: undecodable, truncated, non-canonical or trailing bytes, and a `data_id` that
+   is not exactly 32 bytes, are a decode failure of the whole report.
    A decode failure is `MalformedReport` (100) unless the platform's decoder traps before
    contract code can map it, in which case that trap is the behaviour.
 3. Metadata is the raw 64-byte layout of `02` on every chain (no platform serialisation).
@@ -270,8 +272,8 @@ Rule:
    the public surface (not for internal records such as `FeedState`/`Window`); field names
    and order stay the ABI. Error names may be private constants when the platform offers nothing better.
 3. Constructor naming follows the platform's idiom (`__constructor`, `initialize`, `create`);
-   its arguments are the spec's (`owner`, and `cache` for the Proxy) plus whatever the
-   instance model of L.2 needs, in that order after any signer.
+   its arguments, after any signer, are: whatever the instance model of L.2 needs (e.g. a
+   `seed`), then the spec's (`owner`, and `cache` for the Proxy).
 4. Where a test harness cannot observe state after an abort, "aborts and writes nothing"
    conditions assert the abort code and rely on the platform's transaction atomicity. Where a
    missing entry point is a compile-time fact, the "no `upgrade` entry point" condition is a

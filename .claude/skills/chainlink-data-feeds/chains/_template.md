@@ -41,7 +41,14 @@ them impossible; when you deviate from a default, the reason goes in the decisio
 - **K. Naming** — <case convention for public identifiers, or "spec spelling">; <token amount
   type>; <address type for `workflow_owner`>; <widths for u32 values>.
 - **L. Cross-contract** — <the call mechanism the Proxy uses to reach the Cache; how the
-  callee's error propagates; any records the caller must declare>.
+  callee's error propagates; how the Proxy raises `FeedFrozen` (109) and how that is
+  distinguished from a propagated Cache error; any records the caller must declare>.
+- **M. Interface surface** — <constructor name and full argument order (signer, instance-model
+  arguments, then `owner`[, `cache`]); entry points that cannot take/return structs and the
+  script/constructor workaround; accessor and constructor names for public records; whether
+  admin reads are `Result`-wrapped>.
+- **Retention constant** — <nominal seconds per sequence unit → `DATA_RETENTION_TTL = …`
+  (180 days, `spec/04`)>.
 
 ## Toolchain
 
@@ -82,8 +89,11 @@ beyond the spec arguments is needed, say so.>
 
 <How to: set the caller; assert native and coded failures; assert events (exact fields, and
 "only" conditions); move the sequence; vary the network maximum (if C.2); deploy a mock
-Cache for Proxy unit tests; mint a token for `recover_tokens`; run upgrade conditions (I.1 or
-I.2) or assert the entry point is absent (I.3).>
+Cache for Proxy unit tests (and the `fail_with` substitution on statically linked platforms);
+mint a token for `recover_tokens`; emulate round expiry (`expire_round`); read lifetimes
+(`expect_ttl`, `age_ttl`) where `expiry` holds; assert record presence (`expect_state`); the
+`by_retention` roll; test naming (`<id>` with dots → underscores); run upgrade conditions
+(I.1) or assert the entry point is absent (I.2/I.3).>
 
 ## Decision log
 

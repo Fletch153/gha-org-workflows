@@ -19,7 +19,7 @@ where the condition says "only".
 - `upgrade` swaps code in place (upgrade to a distinct artifact, prove the new code runs at the
   same address).
 - **all persistent and temporary feed data survives a self-upgrade**: after seeding rounds
-  (including one with an answer and timestamp beyond 32 bits), config, permissions and an
+  (including one with a timestamp beyond 32 bits), config, permissions and an
   admin, upgrading the Cache to a freshly built artifact of itself keeps: every historical
   round field-for-field, the tip, decimals, description, permissions, admin membership,
   and `version()`.
@@ -166,3 +166,8 @@ where the condition says "only".
   restoring 18 re-locks the feed.
 - lifecycle end-to-end: proxy self-upgrade keeps routing; Cache self-upgrade keeps latest and
   historical rounds and keeps operating; the cache is swappable.
+
+## Rent reclaim (only where the overlay defines `reclaim_round`, `06` C.4)
+- reclaiming a non-tip round outside the window closes it and refunds its payer; the tip and
+  any readable round are refused with 111; a reclaimed round reads as absent thereafter;
+  reclaim emits no event.

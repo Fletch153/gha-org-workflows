@@ -71,7 +71,8 @@ end of the range (expiry removes oldest first), and the search may rely on that:
 at `mid` is absent, `AtOrBefore` moves the search **up** (treat as acceptable-but-empty),
 `AtOrAfter` also moves **up** (treat as unacceptable). Reader results are wrapped in the
 contract's error type (`Result<_, CacheError>`) except `is_frozen`, which returns the bare list;
-no reader ever actually returns an error.
+no reader ever actually returns an error. The admin reads (`get_feed_permissions`,
+`has_permission`, `is_feed_admin`) return bare values.
 
 ## Writer
 
