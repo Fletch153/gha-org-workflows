@@ -233,3 +233,14 @@ Functionally identical on every round (same 179 reference tests, same export sur
 corpus raised the weaker model's own test count above the strong model's early rounds and
 removed the guesswork; its remaining notes were corpus nits (one misnamed scenario, one
 scenario relying on the mock's unconditional `decimals`).
+
+## Grader v2 — closing the non-Stellar gap
+Two independent checks now apply on every chain:
+- `grade-scenarios.py <chain> <out_dir> <test log>`: applicable scenarios (by overlay
+  capabilities) vs. passing tests named by scenario id. Stellar round 4: 178/179 (the one gap
+  is an id renamed after that run).
+- `mutants.md`: 16 behavioural mutants applied to the generated contract source by a grader
+  agent; a faithful suite fails on each. **Calibration on Stellar round 4: 16/16 caught**,
+  each by the predicted scenario family (baseline 182 pass, 0 fail).
+A chain is graded PASS when: artifact builds; own tests pass; scenario coverage = all
+applicable; mutation score = 16/16 (or n/a mutants explained).
