@@ -211,7 +211,13 @@ unknown feed). The report decoder rejects a `data_id` of any length other than 3
 - Mock Cache for Proxy unit tests: the Cache module's `#[test_only]` injectors
   `test_inject_round`, `test_set_latest` (sets `FeedState.latest_round` without touching the
   round table), `test_new_round_data`, `test_set_frozen` (creates a zero-tip state if absent),
-  `test_expire_round`, and per-type `test_event_counts` for event deltas (direct table writes, no
+  `test_inject_config(id, description)` (so an otherwise unconfigured id answers `decimals` 18 /
+  `description` as the corpus double requires), `test_expire_round`, `test_remove_instance`
+  (the `fail_with` substitution: remove the `Cache` resource at the routed address so the
+  Cache's `no_instance` abort propagates through the Proxy), and per-type
+  `test_event_counts` for event deltas. Window-helper functions that only tests need are
+  `public(friend)` with a `#[test_only] friend` declaration (M.2 forbids public accessors on
+  internal records). Test signers: `account::create_signer_for_test(addr)` (direct table writes, no
   business logic), plus `test_window`, `test_permission_hash`, `test_error_codes`,
   `test_data_retention_ttl`; Proxy `test_has_min_decimals`, `test_error_codes`. A Cache error
   propagating through the Proxy is exercised with a Proxy whose `cache` address holds no

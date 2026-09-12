@@ -58,7 +58,7 @@ authorisation" and is only meaningful on `per_arg_auth` platforms.
 | `call` | `on: cache|proxy|cache2`, `fn`, `as`?, `args` (object keyed by spec argument name), `expect` | invoke; `expect` is one of `{"ok": true}`, `{"value": …}`, `{"error": <code>}`, `{"host_fail": true}`, `{"cache_error": <code>}` (a Cache code surfacing through the Proxy) |
 | `advance` | `ledgers: n` | move the sequence forward by `n` units |
 | `set_network_max` | `ttl: n` | requires `network_max_variable` |
-| `expire_round` | `data_id`, `round_id` | test-only: remove the stored round entry (emulates TTL expiry) |
+| `expire_round` | `data_id`, `round_id` | test-only: remove the stored round entry (emulates TTL expiry). Scenarios only ever expire a low-end prefix or the tip, so the `find_round` prefix assumption of `02` is preserved |
 | `mint` | `to`, `amount` | mint `amount` of `token` to an address |
 | `expect_events` | `on`, `events: [ { "name", "fields": {…} } ]`, `only`?: true, `count`?: n | events emitted by the last `call`; `only` = exactly these and nothing else; fields omitted are not asserted |
 | `expect_state` | `on`, `present`/`absent`: record descriptor | presence of a record by spec key, e.g. `{ "record": "MinDecimals", "data_id": … }` |
@@ -124,9 +124,10 @@ scenario is executed — never drop a setup step even when the assertion would p
   ending in the next failing call; the coverage grader counts the `<id>` test.
 - **`fail_with` on statically-linked platforms** (`06` L.2, the mock is the real Cache module):
   the scenario's asserted property is "a Cache failure surfaces through the Proxy with the
-  Cache's own code and origin, untranslated". Realise it by routing the Proxy at an address
-  with no Cache instance and asserting the Cache's host failure propagates; record this
-  substitution in the decision log.
+  Cache's own code and origin, untranslated". Realise it without adding steps the scenario
+  does not have: remove the Cache instance at the address the Proxy is already routed to (a
+  test-only hook) and assert the Cache's host failure propagates; record this substitution in
+  the decision log.
 - **`expect_events.ordered`** where the harness cannot observe cross-type order: assert all
   listed events were emitted by the call and keep the emission order in the code; note it.
 - **Events that accumulate over a test** (no per-call log): snapshot per-type counts before
